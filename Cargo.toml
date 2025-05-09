@@ -1,0 +1,21 @@
+[workspace]
+resolver = "2"
+members = ["ckb-mock-tx-types"]
+
+[workspace.package]
+version = "0.200.1"
+license = "MIT"
+edition = "2024"
+authors = ["Nervos Core Dev <dev@nervos.org>"]
+
+[workspace.dependencies]
+# CKB dependencies
+ckb-jsonrpc-types = "=0.200.0"
+ckb-traits = "=0.200.0"
+ckb-types = "=0.200.0"
+
+# Crates defined in current workspace
+ckb-mock-tx-types = { path = "ckb-mock-tx-types", version = "0.200.1" }
+
+# Other common crates
+serde = { version = "1.0", features = ["derive"] }
