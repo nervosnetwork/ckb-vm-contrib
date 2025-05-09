@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["ckb-mock-tx-types"]
+members = ["ckb-mock-tx-types", "spike-sys"]
 
 [workspace.package]
 version = "0.200.1"
