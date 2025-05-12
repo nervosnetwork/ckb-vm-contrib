@@ -1,0 +1,26 @@
+name: ckb-x64-simulator
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths: "ckb-x64-simulator/**"
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup
+      run: |
+        clang --version
+        sudo ln -s $(which llvm-ar-18) /usr/bin/llvm-ar || true
+        sudo ln -s $(which llvm-objcopy-18) /usr/bin/llvm-objcopy || true
+        rustup target add riscv64imac-unknown-none-elf
+    - name: Build
+      run: |
+        cd ckb-x64-simulator
+        cargo build
+        cd tests
+        make
