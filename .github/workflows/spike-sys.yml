@@ -16,5 +16,4 @@ jobs:
       run: |
         sudo apt install device-tree-compiler
         cd spike-sys
-        bash build.sh
         cargo build
