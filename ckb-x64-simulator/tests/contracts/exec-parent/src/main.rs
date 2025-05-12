@@ -16,7 +16,6 @@ use ckb_std::ckb_types::bytes::Bytes;
 use ckb_std::ckb_types::core::ScriptHashType;
 use ckb_std::ckb_types::prelude::Unpack;
 use ckb_std::debug;
-use core::ffi::CStr;
 
 pub fn program_entry() -> i8 {
     debug!("This is a sample contract exec-parent!");
@@ -39,8 +38,8 @@ pub fn program_entry() -> i8 {
                 return 2;
             }
         };
-        let arg1 = CStr::from_bytes_with_nul(b"Hello World\0").unwrap();
-        let arg2 = CStr::from_bytes_with_nul("你好\0".as_bytes()).unwrap();
+        let arg1 = c"Hello World";
+        let arg2 = c"你好";
 
         let rc = ckb_std::high_level::exec_cell(&args[..32], hash_type, &[arg1, arg2]).unwrap_err();
         debug!("exec_cell faield: {:?}", rc);
