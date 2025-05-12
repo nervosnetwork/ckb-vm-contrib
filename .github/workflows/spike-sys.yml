@@ -14,6 +14,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build
       run: |
+        sudo apt install device-tree-compiler
         cd spike-sys
         bash build.sh
         cargo build
