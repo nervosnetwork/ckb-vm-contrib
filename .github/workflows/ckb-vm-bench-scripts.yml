@@ -1,18 +1,20 @@
-name: ckb-x64-simulator
+name: ckb-vm-bench-scripts
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths: "ckb-x64-simulator/**"
   push:
     branches: [ main ]
-    paths: "ckb-x64-simulator/**"
+    paths: "ckb-vm-bench-scripts/**"
+  pull_request:
+    branches: [ main ]
+    paths: "ckb-vm-bench-scripts/**"
 
 jobs:
-  build:
+  main:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
     - name: Setup
       run: |
         clang --version
@@ -21,7 +23,5 @@ jobs:
         rustup target add riscv64imac-unknown-none-elf
     - name: Build
       run: |
-        cd ckb-x64-simulator
-        cargo build
-        cd tests
-        make
+        cd ckb-vm-bench-scripts
+        make build

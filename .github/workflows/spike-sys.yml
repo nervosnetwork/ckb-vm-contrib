@@ -6,6 +6,7 @@ on:
     paths: "spike-sys/**"
   push:
     branches: [ main ]
+    paths: "spike-sys/**"
 
 jobs:
   build:

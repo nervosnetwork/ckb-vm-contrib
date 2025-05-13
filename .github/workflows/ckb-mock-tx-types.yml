@@ -6,6 +6,7 @@ on:
     paths: "ckb-mock-tx-types/**"
   push:
     branches: [ main ]
+    paths: "ckb-mock-tx-types/**"
 
 jobs:
   build:
