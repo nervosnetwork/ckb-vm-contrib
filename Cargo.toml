@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["ckb-mock-tx-types", "spike-sys"]
+members = ["ckb-mock-tx-types", "ckb-x64-simulator", "spike-sys"]
 
 [workspace.package]
 version = "0.200.1"
@@ -16,6 +16,10 @@ ckb-types = "=0.200.0"
 
 # Crates defined in current workspace
 ckb-mock-tx-types = { path = "ckb-mock-tx-types", version = "0.200.1" }
+ckb-x64-simulator = { path = "ckb-x64-simulator", version = "0.200.1" }
+spike-sys = { path = "spike-sys", version = "0.200.1" }
 
 # Other common crates
 serde = { version = "1.0", features = ["derive"] }
+serde_derive = "1.0"
+serde_json = "1.0"

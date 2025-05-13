@@ -12,8 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Build
+    - name: Steup
       run: |
         sudo apt install device-tree-compiler
+    - name: Build
+      run: |
         cd spike-sys
         cargo build
