@@ -6,6 +6,7 @@ on:
     paths: "ckb-vm-bench-scripts/**"
   pull_request:
     branches: [ main ]
+    paths: "ckb-vm-bench-scripts/**"
 
 jobs:
   main:

@@ -6,6 +6,7 @@ on:
     paths: "ckb-x64-simulator/**"
   push:
     branches: [ main ]
+    paths: "ckb-x64-simulator/**"
 
 jobs:
   build:
