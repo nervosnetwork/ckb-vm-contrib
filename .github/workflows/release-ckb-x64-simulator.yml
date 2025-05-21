@@ -7,11 +7,15 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
+    - name: Setup
+      run: |
+        clang --version
+        sudo ln -s $(which llvm-ar-18) /usr/bin/llvm-ar || true
+        sudo ln -s $(which llvm-objcopy-18) /usr/bin/llvm-objcopy || true
+        rustup target add riscv64imac-unknown-none-elf
     - name: Publish
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

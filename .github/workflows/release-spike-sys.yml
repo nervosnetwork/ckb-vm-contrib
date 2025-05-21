@@ -1,16 +1,19 @@
-name: Cargo Publish ckb-mock-tx-types
+name: Cargo Publish spike-sys
 
 on:
   push:
     tags:
-      - 'ckb-mock-tx-types-v*'
+      - 'spike-sys-v*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Steup
+      run: |
+        sudo apt install device-tree-compiler
     - name: Publish
       env:
         CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      run: cd ckb-mock-tx-types && cargo publish
+      run: cd spike-sys && cargo publish
