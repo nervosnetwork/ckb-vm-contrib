@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["ckb-mock-tx-types", "ckb-vm-bench", "ckb-x64-simulator", "spike-sys"]
+exclude = ["ckb-vm-test-suite/ckb-vm"]
 
 [workspace.package]
 version = "0.200.1"

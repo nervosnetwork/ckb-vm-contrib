@@ -1,0 +1,30 @@
+name: ckb-vm-test-suite
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths: "ckb-vm-test-suite/**"
+  push:
+    branches: [ main ]
+    paths: "ckb-vm-test-suite/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup
+      run: |
+        cd ckb-vm-test-suite
+        docker run --rm -v $(pwd):/code nervos/ckb-riscv-gnu-toolchain:bionic-20210804 cp -r /riscv /code/
+        echo $(pwd)/riscv/bin >> $GITHUB_PATH
+        git clone https://github.com/nervosnetwork/ckb-vm
+        cd ckb-vm
+        cargo build --features=asm --example=ckb_vm_runner --release
+        cd ..
+    - name: Build
+      run: |
+        cd ckb-vm-test-suite
+        make
