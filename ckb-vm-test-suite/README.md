@@ -13,18 +13,13 @@ $ ls $RISCV/bin/riscv64-unknown-elf-gcc
 Now you can run the test suite with the following steps:
 
 ```bash
-$ git clone https://github.com/nervosnetwork/ckb-vm
-$ cargo build --features=asm --example=ckb_vm_runner --release
-
-$ make CKB_VM_RUNNER="$(pwd)/ckb-vm/target/release/examples/ckb_vm_runner"
+$ RISCV=/opt/riscv ./test.sh
 ```
 
 # Get Coverage Report By Kcov
 
-```sh
-$ git clone https://github.com/nervosnetwork/ckb-vm
-$ cargo build --features=asm --example=ckb_vm_runner
+First install kcov by <https://github.com/SimonKagstrom/kcov/blob/master/INSTALL.md>
 
-$ make kcov # Kcov will only be installed in the current directory
-$ make CKB_VM_RUNNER="$(pwd)/kcov/build/usr/local/bin/kcov $(pwd)/coverage $(pwd)/ckb-vm/target/debug/examples/ckb_vm_runner"
+```sh
+$ RISCV=/opt/riscv ./test.sh --coverage
 ```
