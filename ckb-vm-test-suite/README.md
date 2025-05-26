@@ -26,5 +26,5 @@ $ git clone https://github.com/nervosnetwork/ckb-vm
 $ cargo build --features=asm --example=ckb_vm_runner
 
 $ make kcov # Kcov will only be installed in the current directory
-$ make CKB_VM_RUNNER="$(pwd)/kcov/build/usr/local/bin/kcov $(pwd)/coverage $(pwd)/ckb-vm/target/release/examples/ckb_vm_runner"
+$ make CKB_VM_RUNNER="$(pwd)/kcov/build/usr/local/bin/kcov $(pwd)/coverage $(pwd)/ckb-vm/target/debug/examples/ckb_vm_runner"
 ```
