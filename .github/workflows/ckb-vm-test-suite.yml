@@ -1,0 +1,25 @@
+name: ckb-vm-test-suite
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths: "ckb-vm-test-suite/**"
+  push:
+    branches: [ main ]
+    paths: "ckb-vm-test-suite/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup
+      run: |
+        cd ckb-vm-test-suite
+        docker run --rm -v $(pwd):/code nervos/ckb-riscv-gnu-toolchain:bionic-20210804 cp -r /riscv /code/
+    - name: Build
+      run: |
+        cd ckb-vm-test-suite
+        RISCV=$(pwd)/riscv bash test.sh
