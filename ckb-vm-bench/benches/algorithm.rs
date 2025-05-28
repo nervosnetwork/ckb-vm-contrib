@@ -19,6 +19,7 @@ const BINARY_PATH_P256: &str = "../ckb-vm-bench-scripts/build/release/p256";
 const BINARY_PATH_RSA: &str = "../ckb-vm-bench-scripts/build/release/rsa";
 const BINARY_PATH_SECP256K1_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_ecdsa";
 const BINARY_PATH_SECP256K1_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_schnorr";
+const BINARY_PATH_SPHINCSPLUS_REF: &str = "../ckb-vm-bench-scripts/build/release/sphincsplus_ref";
 
 fn asm_ed25519(c: &mut Criterion) {
     c.bench_function("asm_ed25519", |b| {
@@ -65,6 +66,13 @@ fn asm_secp256k1_ecdsa(c: &mut Criterion) {
 fn asm_secp256k1_schnorr(c: &mut Criterion) {
     c.bench_function("asm_secp256k1_schnorr", |b| {
         let buffer = fs::read(BINARY_PATH_SECP256K1_SCHNORR).unwrap().into();
+        b.iter(|| run_asm(&buffer));
+    });
+}
+
+fn asm_sphincsplus_ref(c: &mut Criterion) {
+    c.bench_function("asm_sphincsplus_ref", |b| {
+        let buffer = fs::read(BINARY_PATH_SPHINCSPLUS_REF).unwrap().into();
         b.iter(|| run_asm(&buffer));
     });
 }
@@ -118,6 +126,13 @@ fn interpret_secp256k1_schnorr(c: &mut Criterion) {
     });
 }
 
+fn interpret_sphincsplus_ref(c: &mut Criterion) {
+    c.bench_function("interpret_sphincsplus_ref", |b| {
+        let buffer = fs::read(BINARY_PATH_SPHINCSPLUS_REF).unwrap().into();
+        b.iter(|| run::<u64, SparseMemory<u64>>(&buffer, &[], RISCV_MAX_MEMORY).unwrap());
+    });
+}
+
 fn mop_ed25519(c: &mut Criterion) {
     c.bench_function("mop_ed25519", |b| {
         let buffer = fs::read(BINARY_PATH_ED25519).unwrap().into();
@@ -167,6 +182,13 @@ fn mop_secp256k1_schnorr(c: &mut Criterion) {
     });
 }
 
+fn mop_sphincsplus_ref(c: &mut Criterion) {
+    c.bench_function("mop_sphincsplus_ref", |b| {
+        let buffer = fs::read(BINARY_PATH_SPHINCSPLUS_REF).unwrap().into();
+        b.iter(|| run_mop(&buffer));
+    });
+}
+
 fn run_asm(program: &Bytes) {
     let asm_core = AsmCoreMachine::new(ISA_IMC | ISA_B, VERSION2, u64::MAX);
     let core = DefaultMachineBuilder::new(asm_core).build();
@@ -192,6 +214,7 @@ criterion_group!(
     asm_rsa,
     asm_secp256k1_ecdsa,
     asm_secp256k1_schnorr,
+    asm_sphincsplus_ref,
     interpret_ed25519,
     interpret_k256_ecdsa,
     interpret_k256_schnorr,
@@ -199,6 +222,7 @@ criterion_group!(
     interpret_rsa,
     interpret_secp256k1_ecdsa,
     interpret_secp256k1_schnorr,
+    interpret_sphincsplus_ref,
     mop_ed25519,
     mop_k256_ecdsa,
     mop_k256_schnorr,
@@ -206,5 +230,6 @@ criterion_group!(
     mop_rsa,
     mop_secp256k1_ecdsa,
     mop_secp256k1_schnorr,
+    mop_sphincsplus_ref,
 );
 criterion_main!(benches);
