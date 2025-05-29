@@ -14,40 +14,24 @@ $ ckb-debugger --bin sphincsplus_ref
 Use the following command to quickly test all combinations:
 
 ```sh
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-128f SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-128s SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-192f SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-192s SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-256f SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-256s SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-128f  SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-128s  SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-192f  SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-192s  SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-256f  SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-256s  SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-128f   SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-128s   SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-192f   SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-192s   SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-256f   SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-256s   SPHINCSPLUS_THASH=simple && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-128f SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-128s SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-192f SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-192s SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-256f SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-haraka-256s SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-128f  SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-128s  SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-192f  SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-192s  SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-256f  SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-shake-256s  SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-128f   SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-128s   SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-192f   SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-192s   SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-256f   SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
-$ make SPHINCSPLUS_PARAMS=sphincs-sha2-256s   SPHINCSPLUS_THASH=robust && ckb-debugger --bin sphincsplus_ref
+#!/usr/bin/env bash
+set -e
+
+thashes=("simple" "robust")
+fns=("haraka" "shake" "sha2")
+sizes=("128" "192" "256")
+options=("f" "s")
+
+for thash in "${thashes[@]}"; do
+  for fn in "${fns[@]}"; do
+    for size in "${sizes[@]}"; do
+      for option in "${options[@]}"; do
+        param="sphincs-${fn}-${size}${option}"
+        echo "Building with $param and $thash..."
+        make SPHINCSPLUS_PARAMS="$param" SPHINCSPLUS_THASH="$thash"
+        ckb-debugger --bin sphincsplus_ref
+      done
+    done
+  done
+done
 ```
