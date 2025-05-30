@@ -13,3 +13,6 @@
 [submodule "deps/riscv-arch-test"]
 	path = deps/riscv-arch-test
 	url = https://github.com/riscv-non-isa/riscv-arch-test.git
+[submodule "deps/sphincsplus"]
+	path = deps/sphincsplus
+	url = https://github.com/sphincs/sphincsplus
