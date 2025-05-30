@@ -114,7 +114,7 @@ fn test_secp256k1_schnorr() {
 fn test_ed25519() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("ed25519");
+    let contract_bin: Bytes = Loader::default().load_binary("ed25519_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
