@@ -10,7 +10,7 @@ use ckb_testtool::context::Context;
 fn test_secp256k1_ecdsa() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("secp256k1_ecdsa");
+    let contract_bin: Bytes = Loader::default().load_binary("secp256k1_ecdsa_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
@@ -43,7 +43,7 @@ fn test_secp256k1_ecdsa() {
 fn test_secp256k1_schnorr() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("secp256k1_schnorr");
+    let contract_bin: Bytes = Loader::default().load_binary("secp256k1_schnorr_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
