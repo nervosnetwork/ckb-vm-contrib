@@ -14,7 +14,7 @@ ckb_std::entry!(program_entry);
 // and the buddy-alloc alloc implementation.
 ckb_std::default_alloc!(16384, 1258306, 64);
 
-mod ed25519;
+mod rsa;
 #[allow(dead_code)]
 #[allow(unused_imports)]
-use ed25519::program_entry;
+use rsa::program_entry;

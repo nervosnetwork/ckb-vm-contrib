@@ -1,7 +1,5 @@
-#![no_std]
-
 use ed25519_dalek::{Signature, VerifyingKey};
-use sha2::{Sha512, digest::Digest};
+use sha2::{digest::Digest, Sha512};
 
 pub fn program_entry() -> i8 {
     // Test case from: https://github.com/dalek-cryptography/ed25519-dalek/blob/02001d8c3422fb0314b541fdb09d04760f7ab4ba/tests/ed25519.rs#L102
