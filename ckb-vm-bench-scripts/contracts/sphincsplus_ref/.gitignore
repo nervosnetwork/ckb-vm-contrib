@@ -2,6 +2,7 @@
 /musl
 /scripts
 /sphincsplus
-/sphincsplus_ref
-/sphincsplus_ref_sign
+/sphincsplus_ref_ckbvm
 /sphincsplus_ref_data.h
+/sphincsplus_ref_native
+/sphincsplus_ref_sign

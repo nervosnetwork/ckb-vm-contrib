@@ -63,8 +63,8 @@ build:
 
 report:
 	@for contract in $(wildcard contracts/*); do \
-		du -h build/$(MODE)/$$(basename $$contract); \
-		ckb-debugger --bin build/$(MODE)/$$(basename $$contract); \
+		du -h build/$(MODE)/$$(basename $$contract)_ckbvm; \
+		ckb-debugger --bin build/$(MODE)/$$(basename $$contract)_ckbvm; \
 	done; \
 
 # Run a single make task for a specific contract. For example:

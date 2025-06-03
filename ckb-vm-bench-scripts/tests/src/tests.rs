@@ -241,7 +241,7 @@ fn test_rsa() {
 fn test_sphincsplus_ref() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("sphincsplus_ref");
+    let contract_bin: Bytes = Loader::default().load_binary("sphincsplus_ref_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
