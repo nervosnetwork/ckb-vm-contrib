@@ -11,15 +11,25 @@ use ckb_vm::{
 };
 use criterion::Criterion;
 use std::fs;
+use std::path::Path;
+use std::process::Command;
 
-const BINARY_PATH_ED25519: &str = "../ckb-vm-bench-scripts/build/release/ed25519";
-const BINARY_PATH_K256_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/k256_ecdsa";
-const BINARY_PATH_K256_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/k256_schnorr";
-const BINARY_PATH_P256: &str = "../ckb-vm-bench-scripts/build/release/p256";
-const BINARY_PATH_RSA: &str = "../ckb-vm-bench-scripts/build/release/rsa";
-const BINARY_PATH_SECP256K1_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_ecdsa";
-const BINARY_PATH_SECP256K1_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_schnorr";
-const BINARY_PATH_SPHINCSPLUS_REF: &str = "../ckb-vm-bench-scripts/build/release/sphincsplus_ref";
+const BINARY_PATH_ED25519: &str = "../ckb-vm-bench-scripts/build/release/ed25519_ckbvm";
+const BINARY_PATH_K256_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/k256_ecdsa_ckbvm";
+const BINARY_PATH_K256_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/k256_schnorr_ckbvm";
+const BINARY_PATH_P256: &str = "../ckb-vm-bench-scripts/build/release/p256_ckbvm";
+const BINARY_PATH_RSA: &str = "../ckb-vm-bench-scripts/build/release/rsa_ckbvm";
+const BINARY_PATH_SECP256K1_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_ecdsa_ckbvm";
+const BINARY_PATH_SECP256K1_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_schnorr_ckbvm";
+const BINARY_PATH_SPHINCSPLUS_REF: &str = "../ckb-vm-bench-scripts/build/release/sphincsplus_ref_ckbvm";
+const NATIVE_PATH_ED25519: &str = "../ckb-vm-bench-scripts/build/release/ed25519_native";
+const NATIVE_PATH_K256_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/k256_ecdsa_native";
+const NATIVE_PATH_K256_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/k256_schnorr_native";
+const NATIVE_PATH_P256: &str = "../ckb-vm-bench-scripts/build/release/p256_native";
+const NATIVE_PATH_RSA: &str = "../ckb-vm-bench-scripts/build/release/rsa_native";
+const NATIVE_PATH_SECP256K1_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_ecdsa_native";
+const NATIVE_PATH_SECP256K1_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_schnorr_native";
+const NATIVE_PATH_SPHINCSPLUS_REF: &str = "../ckb-vm-bench-scripts/build/release/sphincsplus_ref_native";
 
 fn asm_ed25519(c: &mut Criterion) {
     c.bench_function("asm_ed25519", |b| {
@@ -189,6 +199,54 @@ fn mop_sphincsplus_ref(c: &mut Criterion) {
     });
 }
 
+fn native_ed25519(c: &mut Criterion) {
+    c.bench_function("native_ed25519", |b| {
+        b.iter(|| run_native(NATIVE_PATH_ED25519));
+    });
+}
+
+fn native_k256_ecdsa(c: &mut Criterion) {
+    c.bench_function("native_k256_ecdsa", |b| {
+        b.iter(|| run_native(NATIVE_PATH_K256_ECDSA));
+    });
+}
+
+fn native_k256_schnorr(c: &mut Criterion) {
+    c.bench_function("native_k256_schnorr", |b| {
+        b.iter(|| run_native(NATIVE_PATH_K256_SCHNORR));
+    });
+}
+
+fn native_p256(c: &mut Criterion) {
+    c.bench_function("native_p256", |b| {
+        b.iter(|| run_native(NATIVE_PATH_P256));
+    });
+}
+
+fn native_rsa(c: &mut Criterion) {
+    c.bench_function("native_rsa", |b| {
+        b.iter(|| run_native(NATIVE_PATH_RSA));
+    });
+}
+
+fn native_secp256k1_ecdsa(c: &mut Criterion) {
+    c.bench_function("native_secp256k1_ecdsa", |b| {
+        b.iter(|| run_native(NATIVE_PATH_SECP256K1_ECDSA));
+    });
+}
+
+fn native_secp256k1_schnorr(c: &mut Criterion) {
+    c.bench_function("native_secp256k1_schnorr", |b| {
+        b.iter(|| run_native(NATIVE_PATH_SECP256K1_SCHNORR));
+    });
+}
+
+fn native_sphincsplus_ref(c: &mut Criterion) {
+    c.bench_function("native_sphincsplus_ref", |b| {
+        b.iter(|| run_native(NATIVE_PATH_SPHINCSPLUS_REF));
+    });
+}
+
 fn run_asm(program: &Bytes) {
     let asm_core = AsmCoreMachine::new(ISA_IMC | ISA_B, VERSION2, u64::MAX);
     let core = DefaultMachineBuilder::new(asm_core).build();
@@ -203,6 +261,10 @@ fn run_mop(program: &Bytes) {
     let mut machine = AsmMachine::new(core);
     machine.load_program(&program, [].into_iter()).unwrap();
     machine.run().unwrap();
+}
+
+fn run_native<P: AsRef<Path>>(path: P) {
+    assert!(Command::new(path.as_ref()).status().unwrap().success());
 }
 
 criterion_group!(
@@ -231,5 +293,13 @@ criterion_group!(
     mop_secp256k1_ecdsa,
     mop_secp256k1_schnorr,
     mop_sphincsplus_ref,
+    native_ed25519,
+    native_k256_ecdsa,
+    native_k256_schnorr,
+    native_p256,
+    native_rsa,
+    native_secp256k1_ecdsa,
+    native_secp256k1_schnorr,
+    native_sphincsplus_ref,
 );
 criterion_main!(benches);
