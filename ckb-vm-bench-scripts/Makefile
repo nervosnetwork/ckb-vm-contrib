@@ -63,6 +63,7 @@ build:
 
 report:
 	@for contract in $(wildcard contracts/*); do \
+		du -b build/$(MODE)/$$(basename $$contract)_ckbvm; \
 		du -h build/$(MODE)/$$(basename $$contract)_ckbvm; \
 		ckb-debugger --bin build/$(MODE)/$$(basename $$contract)_ckbvm; \
 	done; \

@@ -99,8 +99,6 @@ build: compiler-rt-builtins-riscv musl sphincsplus
 			cp $(TOP)/contracts/$$binary/$${binary}_ckbvm $(TOP)/$(BUILD_DIR); \
 			cp $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm.debug; \
 			$(OBJCOPY) --strip-debug --strip-all $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm; \
-		done; \
-		for binary in $(BINARIES); do \
 			echo "Copying binary $${binary}_native to build directory"; \
 			cp $(TOP)/contracts/$$binary/$${binary}_native $(TOP)/$(BUILD_DIR); \
 		done; \

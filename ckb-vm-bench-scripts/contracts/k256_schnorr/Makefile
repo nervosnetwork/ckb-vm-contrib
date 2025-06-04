@@ -36,29 +36,21 @@ default: build test
 
 build:
 	for binary in $(BINARIES); do \
-		binary=$${binary}_ckbvm; \
 		RUSTFLAGS="$(FULL_RUSTFLAGS)" TARGET_CC="$(CLANG)" TARGET_AR="$(AR)" \
-			cargo build --target=riscv64imac-unknown-none-elf --bin $$binary $(MODE_ARGS) $(CARGO_ARGS); \
-	done
-	for binary in $(BINARIES); do \
-		binary=$${binary}_native; \
+			cargo build --target=riscv64imac-unknown-none-elf --bin $${binary}_ckbvm $(MODE_ARGS) $(CARGO_ARGS); \
 		TARGET_CC="$(CLANG)" TARGET_AR="$(AR)" \
-			cargo build --bin $$binary $(MODE_ARGS) $(CARGO_ARGS); \
+			cargo build --bin $${binary}_native $(MODE_ARGS) $(CARGO_ARGS); \
 	done
 	@set -eu; \
 	if [ "x$(BUILD_DIR)" != "x" ]; then \
 		for binary in $(BINARIES); do \
-			binary=$${binary}_ckbvm; \
-			echo "Copying binary $$binary to build directory"; \
-			cp $(TOP)/target/riscv64imac-unknown-none-elf/$(MODE)/$$binary $(TOP)/$(BUILD_DIR); \
-			cp $(TOP)/$(BUILD_DIR)/$$binary $(TOP)/$(BUILD_DIR)/$$binary.debug; \
-			$(OBJCOPY) --strip-debug --strip-all $(TOP)/$(BUILD_DIR)/$$binary; \
+			echo "Copying binary $${binary}_ckbvm to build directory"; \
+			cp $(TOP)/target/riscv64imac-unknown-none-elf/$(MODE)/$${binary}_ckbvm $(TOP)/$(BUILD_DIR); \
+			cp $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm.debug; \
+			$(OBJCOPY) --strip-debug --strip-all $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm; \
+			echo "Copying binary $${binary}_native to build directory"; \
+			cp $(TOP)/target/$(MODE)/$${binary}_native $(TOP)/$(BUILD_DIR); \
 		done; \
-		for binary in $(BINARIES); do \
-			binary=$${binary}_native; \
-			echo "Copying binary $$binary to build directory"; \
-			cp $(TOP)/target/$(MODE)/$$binary $(TOP)/$(BUILD_DIR); \
-		done \
 	fi
 
 # test, check, clippy and fmt here are provided for completeness,
