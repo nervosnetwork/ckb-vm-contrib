@@ -67,12 +67,18 @@ ifneq (,$(findstring sha2,$(SPHINCSPLUS_PARAMS)))
 		$(SPHINCSPLUS_DIR)/thash_sha2_$(SPHINCSPLUS_THASH).c
 endif
 
-CFLAGS_BASE = --target=riscv64 -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
-CFLAGS_SPHINCSPLUS = $(CFLAGS_BASE) \
+CFLAGS_CKBVM_BASE = --target=riscv64 -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
+CFLAGS_CKBVM_SPHINCSPLUS = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-I sphincsplus/ref \
 	-Lmusl/release/lib -Lcompiler-rt-builtins-riscv/build \
 	-lc -lgcc -lcompiler-rt \
+	-DPARAMS=$(SPHINCSPLUS_PARAMS) \
+	-Wl,--gc-sections
+
+CFLAGS_NATIVE_BASE = $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
+CFLAGS_NATIVE_SPHINCSPLUS = $(CFLAGS_NATIVE_BASE) \
+	-I sphincsplus/ref \
 	-DPARAMS=$(SPHINCSPLUS_PARAMS) \
 	-Wl,--gc-sections
 
@@ -84,15 +90,18 @@ build: compiler-rt-builtins-riscv musl sphincsplus
 		$(SPHINCSPLUS_DIR)/randombytes.c \
 		sphincsplus_ref_sign.c
 	./sphincsplus_ref_sign > sphincsplus_ref_data.h
-	$(CLANG) $(CFLAGS_SPHINCSPLUS) -o sphincsplus_ref sphincsplus_ref.c $(SPHINCSPLUS_SOURCES)
+	$(CLANG) $(CFLAGS_CKBVM_SPHINCSPLUS) -o sphincsplus_ref_ckbvm sphincsplus_ref.c $(SPHINCSPLUS_SOURCES)
+	$(CLANG) $(CFLAGS_NATIVE_SPHINCSPLUS) -o sphincsplus_ref_native sphincsplus_ref.c $(SPHINCSPLUS_SOURCES)
 	@set -eu; \
 	if [ "x$(BUILD_DIR)" != "x" ]; then \
 		for binary in $(BINARIES); do \
-			echo "Copying binary $$binary to build directory"; \
-			cp $(TOP)/contracts/$$binary/$$binary $(TOP)/$(BUILD_DIR); \
-			cp $(TOP)/$(BUILD_DIR)/$$binary $(TOP)/$(BUILD_DIR)/$$binary.debug; \
-			$(OBJCOPY) --strip-debug --strip-all $(TOP)/$(BUILD_DIR)/$$binary; \
-		done \
+			echo "Copying binary $${binary}_ckbvm to build directory"; \
+			cp $(TOP)/contracts/$$binary/$${binary}_ckbvm $(TOP)/$(BUILD_DIR); \
+			cp $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm.debug; \
+			$(OBJCOPY) --strip-debug --strip-all $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm; \
+			echo "Copying binary $${binary}_native to build directory"; \
+			cp $(TOP)/contracts/$$binary/$${binary}_native $(TOP)/$(BUILD_DIR); \
+		done; \
 	fi
 
 compiler-rt-builtins-riscv:

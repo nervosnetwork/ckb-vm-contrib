@@ -36,27 +36,37 @@ endif
 
 default: build test
 
-CFLAGS_BASE = --target=riscv64 -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
-CFLAGS_SECP256K1 = $(CFLAGS_BASE) \
+CFLAGS_CKBVM_BASE = --target=riscv64 -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
+CFLAGS_CKBVM_SECP256K1 = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY
-CFLAGS_SECP256K1_ECDSA = $(CFLAGS_BASE) \
+CFLAGS_CKBVM_SECP256K1_ECDSA = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-Isecp256k1/include -Isecp256k1/src \
 	-Lmusl/release/lib -Lcompiler-rt-builtins-riscv/build \
 	-lc -lgcc -lcompiler-rt \
 	-Wl,--gc-sections
 
+CFLAGS_NATIVE_BASE = $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
+CFLAGS_NATIVE_SECP256K1 = $(CFLAGS_NATIVE_BASE) \
+	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY
+CFLAGS_NATIVE_SECP256K1_ECDSA = $(CFLAGS_NATIVE_BASE) \
+	-Isecp256k1/include -Isecp256k1/src \
+	-Wl,--gc-sections
+
 build: compiler-rt-builtins-riscv musl secp256k1
-	$(CLANG) $(CFLAGS_SECP256K1_ECDSA) -o secp256k1_ecdsa secp256k1_ecdsa.c secp256k1/build/*
+	$(CLANG) $(CFLAGS_CKBVM_SECP256K1_ECDSA) -o secp256k1_ecdsa_ckbvm secp256k1_ecdsa.c secp256k1/build/ckbvm/*
+	$(CLANG) $(CFLAGS_NATIVE_SECP256K1_ECDSA) -o secp256k1_ecdsa_native secp256k1_ecdsa.c secp256k1/build/native/*
 	@set -eu; \
 	if [ "x$(BUILD_DIR)" != "x" ]; then \
 		for binary in $(BINARIES); do \
-			echo "Copying binary $$binary to build directory"; \
-			cp $(TOP)/contracts/$$binary/$$binary $(TOP)/$(BUILD_DIR); \
-			cp $(TOP)/$(BUILD_DIR)/$$binary $(TOP)/$(BUILD_DIR)/$$binary.debug; \
-			$(OBJCOPY) --strip-debug --strip-all $(TOP)/$(BUILD_DIR)/$$binary; \
-		done \
+			echo "Copying binary $${binary}_ckbvm to build directory"; \
+			cp $(TOP)/contracts/$$binary/$${binary}_ckbvm $(TOP)/$(BUILD_DIR); \
+			cp $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm.debug; \
+			$(OBJCOPY) --strip-debug --strip-all $(TOP)/$(BUILD_DIR)/$${binary}_ckbvm; \
+			echo "Copying binary $${binary}_native to build directory"; \
+			cp $(TOP)/contracts/$$binary/$${binary}_native $(TOP)/$(BUILD_DIR); \
+		done; \
 	fi
 
 compiler-rt-builtins-riscv:
@@ -70,9 +80,14 @@ musl:
 secp256k1:
 	ln -s ../../../deps/secp256k1 .
 	mkdir -p secp256k1/build
-	$(CLANG) $(CFLAGS_SECP256K1) -c -o secp256k1/build/precomputed_ecmult.o secp256k1/src/precomputed_ecmult.c
-	$(CLANG) $(CFLAGS_SECP256K1) -c -o secp256k1/build/precomputed_ecmult_gen.o secp256k1/src/precomputed_ecmult_gen.c
-	$(CLANG) $(CFLAGS_SECP256K1) -c -o secp256k1/build/secp256k1.o secp256k1/src/secp256k1.c
+	mkdir -p secp256k1/build/ckbvm
+	mkdir -p secp256k1/build/native
+	$(CLANG) $(CFLAGS_CKBVM_SECP256K1) -c -o secp256k1/build/ckbvm/precomputed_ecmult.o secp256k1/src/precomputed_ecmult.c
+	$(CLANG) $(CFLAGS_CKBVM_SECP256K1) -c -o secp256k1/build/ckbvm/precomputed_ecmult_gen.o secp256k1/src/precomputed_ecmult_gen.c
+	$(CLANG) $(CFLAGS_CKBVM_SECP256K1) -c -o secp256k1/build/ckbvm/secp256k1.o secp256k1/src/secp256k1.c
+	$(CLANG) $(CFLAGS_NATIVE_SECP256K1) -c -o secp256k1/build/native/precomputed_ecmult.o secp256k1/src/precomputed_ecmult.c
+	$(CLANG) $(CFLAGS_NATIVE_SECP256K1) -c -o secp256k1/build/native/precomputed_ecmult_gen.o secp256k1/src/precomputed_ecmult_gen.c
+	$(CLANG) $(CFLAGS_NATIVE_SECP256K1) -c -o secp256k1/build/native/secp256k1.o secp256k1/src/secp256k1.c
 
 # test, check, clippy and fmt here are provided for completeness,
 # there is nothing wrong invoking cargo directly instead of make.

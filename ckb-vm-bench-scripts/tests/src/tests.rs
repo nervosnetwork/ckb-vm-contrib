@@ -10,50 +10,31 @@ use ckb_testtool::context::Context;
 fn test_secp256k1_ecdsa() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("secp256k1_ecdsa");
+    let contract_bin: Bytes = Loader::default().load_binary("secp256k1_ecdsa_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
-    let lock_script = context
-        .build_script(&out_point, Bytes::from(vec![42]))
-        .expect("script");
+    let lock_script = context.build_script(&out_point, Bytes::from(vec![42])).expect("script");
 
     // prepare cells
     let input_out_point = context.create_cell(
-        CellOutput::new_builder()
-            .capacity(1000u64.pack())
-            .lock(lock_script.clone())
-            .build(),
+        CellOutput::new_builder().capacity(1000u64.pack()).lock(lock_script.clone()).build(),
         Bytes::new(),
     );
-    let input = CellInput::new_builder()
-        .previous_output(input_out_point)
-        .build();
+    let input = CellInput::new_builder().previous_output(input_out_point).build();
     let outputs = vec![
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script.clone())
-            .build(),
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script)
-            .build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script.clone()).build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script).build(),
     ];
 
     let outputs_data = vec![Bytes::new(); 2];
 
     // build transaction
-    let tx = TransactionBuilder::default()
-        .input(input)
-        .outputs(outputs)
-        .outputs_data(outputs_data.pack())
-        .build();
+    let tx = TransactionBuilder::default().input(input).outputs(outputs).outputs_data(outputs_data.pack()).build();
     let tx = context.complete_tx(tx);
 
     // run
-    let cycles = context
-        .verify_tx(&tx, 10_000_000)
-        .expect("pass verification");
+    let cycles = context.verify_tx(&tx, 10_000_000).expect("pass verification");
     println!("consume cycles: {}", cycles);
 }
 
@@ -62,50 +43,31 @@ fn test_secp256k1_ecdsa() {
 fn test_secp256k1_schnorr() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("secp256k1_schnorr");
+    let contract_bin: Bytes = Loader::default().load_binary("secp256k1_schnorr_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
-    let lock_script = context
-        .build_script(&out_point, Bytes::from(vec![42]))
-        .expect("script");
+    let lock_script = context.build_script(&out_point, Bytes::from(vec![42])).expect("script");
 
     // prepare cells
     let input_out_point = context.create_cell(
-        CellOutput::new_builder()
-            .capacity(1000u64.pack())
-            .lock(lock_script.clone())
-            .build(),
+        CellOutput::new_builder().capacity(1000u64.pack()).lock(lock_script.clone()).build(),
         Bytes::new(),
     );
-    let input = CellInput::new_builder()
-        .previous_output(input_out_point)
-        .build();
+    let input = CellInput::new_builder().previous_output(input_out_point).build();
     let outputs = vec![
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script.clone())
-            .build(),
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script)
-            .build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script.clone()).build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script).build(),
     ];
 
     let outputs_data = vec![Bytes::new(); 2];
 
     // build transaction
-    let tx = TransactionBuilder::default()
-        .input(input)
-        .outputs(outputs)
-        .outputs_data(outputs_data.pack())
-        .build();
+    let tx = TransactionBuilder::default().input(input).outputs(outputs).outputs_data(outputs_data.pack()).build();
     let tx = context.complete_tx(tx);
 
     // run
-    let cycles = context
-        .verify_tx(&tx, 10_000_000)
-        .expect("pass verification");
+    let cycles = context.verify_tx(&tx, 10_000_000).expect("pass verification");
     println!("consume cycles: {}", cycles);
 }
 
@@ -114,50 +76,31 @@ fn test_secp256k1_schnorr() {
 fn test_ed25519() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("ed25519");
+    let contract_bin: Bytes = Loader::default().load_binary("ed25519_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
-    let lock_script = context
-        .build_script(&out_point, Bytes::from(vec![42]))
-        .expect("script");
+    let lock_script = context.build_script(&out_point, Bytes::from(vec![42])).expect("script");
 
     // prepare cells
     let input_out_point = context.create_cell(
-        CellOutput::new_builder()
-            .capacity(1000u64.pack())
-            .lock(lock_script.clone())
-            .build(),
+        CellOutput::new_builder().capacity(1000u64.pack()).lock(lock_script.clone()).build(),
         Bytes::new(),
     );
-    let input = CellInput::new_builder()
-        .previous_output(input_out_point)
-        .build();
+    let input = CellInput::new_builder().previous_output(input_out_point).build();
     let outputs = vec![
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script.clone())
-            .build(),
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script)
-            .build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script.clone()).build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script).build(),
     ];
 
     let outputs_data = vec![Bytes::new(); 2];
 
     // build transaction
-    let tx = TransactionBuilder::default()
-        .input(input)
-        .outputs(outputs)
-        .outputs_data(outputs_data.pack())
-        .build();
+    let tx = TransactionBuilder::default().input(input).outputs(outputs).outputs_data(outputs_data.pack()).build();
     let tx = context.complete_tx(tx);
 
     // run
-    let cycles = context
-        .verify_tx(&tx, 10_000_000)
-        .expect("pass verification");
+    let cycles = context.verify_tx(&tx, 10_000_000).expect("pass verification");
     println!("consume cycles: {}", cycles);
 }
 
@@ -166,50 +109,31 @@ fn test_ed25519() {
 fn test_k256_ecdsa() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("k256_ecdsa");
+    let contract_bin: Bytes = Loader::default().load_binary("k256_ecdsa_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
-    let lock_script = context
-        .build_script(&out_point, Bytes::from(vec![42]))
-        .expect("script");
+    let lock_script = context.build_script(&out_point, Bytes::from(vec![42])).expect("script");
 
     // prepare cells
     let input_out_point = context.create_cell(
-        CellOutput::new_builder()
-            .capacity(1000u64.pack())
-            .lock(lock_script.clone())
-            .build(),
+        CellOutput::new_builder().capacity(1000u64.pack()).lock(lock_script.clone()).build(),
         Bytes::new(),
     );
-    let input = CellInput::new_builder()
-        .previous_output(input_out_point)
-        .build();
+    let input = CellInput::new_builder().previous_output(input_out_point).build();
     let outputs = vec![
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script.clone())
-            .build(),
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script)
-            .build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script.clone()).build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script).build(),
     ];
 
     let outputs_data = vec![Bytes::new(); 2];
 
     // build transaction
-    let tx = TransactionBuilder::default()
-        .input(input)
-        .outputs(outputs)
-        .outputs_data(outputs_data.pack())
-        .build();
+    let tx = TransactionBuilder::default().input(input).outputs(outputs).outputs_data(outputs_data.pack()).build();
     let tx = context.complete_tx(tx);
 
     // run
-    let cycles = context
-        .verify_tx(&tx, 10_000_000)
-        .expect("pass verification");
+    let cycles = context.verify_tx(&tx, 10_000_000).expect("pass verification");
     println!("consume cycles: {}", cycles);
 }
 
@@ -218,50 +142,31 @@ fn test_k256_ecdsa() {
 fn test_k256_schnorr() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("k256_schnorr");
+    let contract_bin: Bytes = Loader::default().load_binary("k256_schnorr_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
-    let lock_script = context
-        .build_script(&out_point, Bytes::from(vec![42]))
-        .expect("script");
+    let lock_script = context.build_script(&out_point, Bytes::from(vec![42])).expect("script");
 
     // prepare cells
     let input_out_point = context.create_cell(
-        CellOutput::new_builder()
-            .capacity(1000u64.pack())
-            .lock(lock_script.clone())
-            .build(),
+        CellOutput::new_builder().capacity(1000u64.pack()).lock(lock_script.clone()).build(),
         Bytes::new(),
     );
-    let input = CellInput::new_builder()
-        .previous_output(input_out_point)
-        .build();
+    let input = CellInput::new_builder().previous_output(input_out_point).build();
     let outputs = vec![
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script.clone())
-            .build(),
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script)
-            .build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script.clone()).build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script).build(),
     ];
 
     let outputs_data = vec![Bytes::new(); 2];
 
     // build transaction
-    let tx = TransactionBuilder::default()
-        .input(input)
-        .outputs(outputs)
-        .outputs_data(outputs_data.pack())
-        .build();
+    let tx = TransactionBuilder::default().input(input).outputs(outputs).outputs_data(outputs_data.pack()).build();
     let tx = context.complete_tx(tx);
 
     // run
-    let cycles = context
-        .verify_tx(&tx, 10_000_000)
-        .expect("pass verification");
+    let cycles = context.verify_tx(&tx, 10_000_000).expect("pass verification");
     println!("consume cycles: {}", cycles);
 }
 
@@ -270,50 +175,31 @@ fn test_k256_schnorr() {
 fn test_p256() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("p256");
+    let contract_bin: Bytes = Loader::default().load_binary("p256_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
-    let lock_script = context
-        .build_script(&out_point, Bytes::from(vec![42]))
-        .expect("script");
+    let lock_script = context.build_script(&out_point, Bytes::from(vec![42])).expect("script");
 
     // prepare cells
     let input_out_point = context.create_cell(
-        CellOutput::new_builder()
-            .capacity(1000u64.pack())
-            .lock(lock_script.clone())
-            .build(),
+        CellOutput::new_builder().capacity(1000u64.pack()).lock(lock_script.clone()).build(),
         Bytes::new(),
     );
-    let input = CellInput::new_builder()
-        .previous_output(input_out_point)
-        .build();
+    let input = CellInput::new_builder().previous_output(input_out_point).build();
     let outputs = vec![
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script.clone())
-            .build(),
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script)
-            .build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script.clone()).build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script).build(),
     ];
 
     let outputs_data = vec![Bytes::new(); 2];
 
     // build transaction
-    let tx = TransactionBuilder::default()
-        .input(input)
-        .outputs(outputs)
-        .outputs_data(outputs_data.pack())
-        .build();
+    let tx = TransactionBuilder::default().input(input).outputs(outputs).outputs_data(outputs_data.pack()).build();
     let tx = context.complete_tx(tx);
 
     // run
-    let cycles = context
-        .verify_tx(&tx, 10_000_000)
-        .expect("pass verification");
+    let cycles = context.verify_tx(&tx, 10_000_000).expect("pass verification");
     println!("consume cycles: {}", cycles);
 }
 
@@ -322,50 +208,31 @@ fn test_p256() {
 fn test_rsa() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("rsa");
+    let contract_bin: Bytes = Loader::default().load_binary("rsa_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
-    let lock_script = context
-        .build_script(&out_point, Bytes::from(vec![42]))
-        .expect("script");
+    let lock_script = context.build_script(&out_point, Bytes::from(vec![42])).expect("script");
 
     // prepare cells
     let input_out_point = context.create_cell(
-        CellOutput::new_builder()
-            .capacity(1000u64.pack())
-            .lock(lock_script.clone())
-            .build(),
+        CellOutput::new_builder().capacity(1000u64.pack()).lock(lock_script.clone()).build(),
         Bytes::new(),
     );
-    let input = CellInput::new_builder()
-        .previous_output(input_out_point)
-        .build();
+    let input = CellInput::new_builder().previous_output(input_out_point).build();
     let outputs = vec![
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script.clone())
-            .build(),
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script)
-            .build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script.clone()).build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script).build(),
     ];
 
     let outputs_data = vec![Bytes::new(); 2];
 
     // build transaction
-    let tx = TransactionBuilder::default()
-        .input(input)
-        .outputs(outputs)
-        .outputs_data(outputs_data.pack())
-        .build();
+    let tx = TransactionBuilder::default().input(input).outputs(outputs).outputs_data(outputs_data.pack()).build();
     let tx = context.complete_tx(tx);
 
     // run
-    let cycles = context
-        .verify_tx(&tx, 10_000_000)
-        .expect("pass verification");
+    let cycles = context.verify_tx(&tx, 10_000_000).expect("pass verification");
     println!("consume cycles: {}", cycles);
 }
 
@@ -374,49 +241,30 @@ fn test_rsa() {
 fn test_sphincsplus_ref() {
     // deploy contract
     let mut context = Context::default();
-    let contract_bin: Bytes = Loader::default().load_binary("sphincsplus_ref");
+    let contract_bin: Bytes = Loader::default().load_binary("sphincsplus_ref_ckbvm");
     let out_point = context.deploy_cell(contract_bin);
 
     // prepare scripts
-    let lock_script = context
-        .build_script(&out_point, Bytes::from(vec![42]))
-        .expect("script");
+    let lock_script = context.build_script(&out_point, Bytes::from(vec![42])).expect("script");
 
     // prepare cells
     let input_out_point = context.create_cell(
-        CellOutput::new_builder()
-            .capacity(1000u64.pack())
-            .lock(lock_script.clone())
-            .build(),
+        CellOutput::new_builder().capacity(1000u64.pack()).lock(lock_script.clone()).build(),
         Bytes::new(),
     );
-    let input = CellInput::new_builder()
-        .previous_output(input_out_point)
-        .build();
+    let input = CellInput::new_builder().previous_output(input_out_point).build();
     let outputs = vec![
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script.clone())
-            .build(),
-        CellOutput::new_builder()
-            .capacity(500u64.pack())
-            .lock(lock_script)
-            .build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script.clone()).build(),
+        CellOutput::new_builder().capacity(500u64.pack()).lock(lock_script).build(),
     ];
 
     let outputs_data = vec![Bytes::new(); 2];
 
     // build transaction
-    let tx = TransactionBuilder::default()
-        .input(input)
-        .outputs(outputs)
-        .outputs_data(outputs_data.pack())
-        .build();
+    let tx = TransactionBuilder::default().input(input).outputs(outputs).outputs_data(outputs_data.pack()).build();
     let tx = context.complete_tx(tx);
 
     // run
-    let cycles = context
-        .verify_tx(&tx, 10_000_000_000)
-        .expect("pass verification");
+    let cycles = context.verify_tx(&tx, 10_000_000_000).expect("pass verification");
     println!("consume cycles: {}", cycles);
 }

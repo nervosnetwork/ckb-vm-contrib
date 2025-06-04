@@ -92,11 +92,7 @@ impl Loader {
 
 // This helper method runs Context::verify_tx, but in case error happens,
 // it also dumps current transaction to failed_txs folder.
-pub fn verify_and_dump_failed_tx(
-    context: &Context,
-    tx: &TransactionView,
-    max_cycles: u64,
-) -> Result<Cycle, Error> {
+pub fn verify_and_dump_failed_tx(context: &Context, tx: &TransactionView, max_cycles: u64) -> Result<Cycle, Error> {
     let result = context.verify_tx(tx, max_cycles);
     if result.is_err() {
         let mut path = env::current_dir().expect("current dir");
