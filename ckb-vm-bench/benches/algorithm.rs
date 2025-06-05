@@ -90,56 +90,56 @@ fn asm_sphincsplus_ref(c: &mut Criterion) {
 fn interpret_ed25519(c: &mut Criterion) {
     c.bench_function("interpret_ed25519", |b| {
         let buffer = fs::read(BINARY_PATH_ED25519).unwrap().into();
-        b.iter(|| run::<u64, SparseMemory<u64>>(&buffer, &[], RISCV_MAX_MEMORY).unwrap());
+        b.iter(|| run_interpret(&buffer));
     });
 }
 
 fn interpret_k256_ecdsa(c: &mut Criterion) {
     c.bench_function("interpret_k256_ecdsa", |b| {
         let buffer = fs::read(BINARY_PATH_K256_ECDSA).unwrap().into();
-        b.iter(|| run::<u64, SparseMemory<u64>>(&buffer, &[], RISCV_MAX_MEMORY).unwrap());
+        b.iter(|| run_interpret(&buffer));
     });
 }
 
 fn interpret_k256_schnorr(c: &mut Criterion) {
     c.bench_function("interpret_k256_schnorr", |b| {
         let buffer = fs::read(BINARY_PATH_K256_SCHNORR).unwrap().into();
-        b.iter(|| run::<u64, SparseMemory<u64>>(&buffer, &[], RISCV_MAX_MEMORY).unwrap());
+        b.iter(|| run_interpret(&buffer));
     });
 }
 
 fn interpret_p256(c: &mut Criterion) {
     c.bench_function("interpret_p256", |b| {
         let buffer = fs::read(BINARY_PATH_P256).unwrap().into();
-        b.iter(|| run::<u64, SparseMemory<u64>>(&buffer, &[], RISCV_MAX_MEMORY).unwrap());
+        b.iter(|| run_interpret(&buffer));
     });
 }
 
 fn interpret_rsa(c: &mut Criterion) {
     c.bench_function("interpret_rsa", |b| {
         let buffer = fs::read(BINARY_PATH_RSA).unwrap().into();
-        b.iter(|| run::<u64, SparseMemory<u64>>(&buffer, &[], RISCV_MAX_MEMORY).unwrap());
+        b.iter(|| run_interpret(&buffer));
     });
 }
 
 fn interpret_secp256k1_ecdsa(c: &mut Criterion) {
     c.bench_function("interpret_secp256k1_ecdsa", |b| {
         let buffer = fs::read(BINARY_PATH_SECP256K1_ECDSA).unwrap().into();
-        b.iter(|| run::<u64, SparseMemory<u64>>(&buffer, &[], RISCV_MAX_MEMORY).unwrap());
+        b.iter(|| run_interpret(&buffer));
     });
 }
 
 fn interpret_secp256k1_schnorr(c: &mut Criterion) {
     c.bench_function("interpret_secp256k1_schnorr", |b| {
         let buffer = fs::read(BINARY_PATH_SECP256K1_SCHNORR).unwrap().into();
-        b.iter(|| run::<u64, SparseMemory<u64>>(&buffer, &[], RISCV_MAX_MEMORY).unwrap());
+        b.iter(|| run_interpret(&buffer));
     });
 }
 
 fn interpret_sphincsplus_ref(c: &mut Criterion) {
     c.bench_function("interpret_sphincsplus_ref", |b| {
         let buffer = fs::read(BINARY_PATH_SPHINCSPLUS_REF).unwrap().into();
-        b.iter(|| run::<u64, SparseMemory<u64>>(&buffer, &[], RISCV_MAX_MEMORY).unwrap());
+        b.iter(|| run_interpret(&buffer));
     });
 }
 
@@ -252,7 +252,13 @@ fn run_asm(program: &Bytes) {
     let core = DefaultMachineBuilder::new(asm_core).build();
     let mut machine = AsmMachine::new(core);
     machine.load_program(&program, [].into_iter()).unwrap();
-    machine.run().unwrap();
+    let ret = machine.run().unwrap();
+    assert_eq!(ret, 0);
+}
+
+fn run_interpret(program: &Bytes) {
+    let ret = run::<u64, SparseMemory<u64>>(&program, &[], RISCV_MAX_MEMORY).unwrap();
+    assert_eq!(ret, 0);
 }
 
 fn run_mop(program: &Bytes) {
@@ -260,7 +266,8 @@ fn run_mop(program: &Bytes) {
     let core = DefaultMachineBuilder::new(asm_core).build();
     let mut machine = AsmMachine::new(core);
     machine.load_program(&program, [].into_iter()).unwrap();
-    machine.run().unwrap();
+    let ret = machine.run().unwrap();
+    assert_eq!(ret, 0);
 }
 
 fn run_native<P: AsRef<Path>>(path: P) {
