@@ -1,7 +1,7 @@
 use ed25519_dalek::{Signature, VerifyingKey};
 use sha2::{digest::Digest, Sha512};
 
-pub fn program_entry() -> i8 {
+pub fn execute() -> i8 {
     // Test case from: https://github.com/dalek-cryptography/ed25519-dalek/blob/02001d8c3422fb0314b541fdb09d04760f7ab4ba/tests/ed25519.rs#L102
     let pub_bytes = [
         0xec, 0x17, 0x2b, 0x93, 0xad, 0x5e, 0x56, 0x3b, 0xf4, 0x93, 0x2c, 0x70, 0xe1, 0x24, 0x50, 0x34, 0xc3, 0x54,

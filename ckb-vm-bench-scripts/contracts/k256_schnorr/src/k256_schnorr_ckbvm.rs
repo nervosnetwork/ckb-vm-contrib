@@ -15,6 +15,13 @@ ckb_std::entry!(program_entry);
 ckb_std::default_alloc!(16384, 1258306, 64);
 
 mod k256_schnorr;
-#[allow(dead_code)]
-#[allow(unused_imports)]
-use k256_schnorr::program_entry;
+use k256_schnorr::execute;
+
+pub fn program_entry() -> i8 {
+    let args = ckb_std::env::argv();
+    let n = if args.len() == 0 { 1 } else { args[0].to_str().unwrap().parse().unwrap() };
+    for _ in 0..n {
+        assert_eq!(execute(), 0);
+    }
+    0
+}

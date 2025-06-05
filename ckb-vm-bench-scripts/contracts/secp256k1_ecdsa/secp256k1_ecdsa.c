@@ -1,7 +1,8 @@
+#include <stdlib.h>
 #include "secp256k1.h"
 #include "secp256k1_recovery.h"
 
-int main() {
+int execute() {
     const unsigned char sig_raw[64] = {
         0x25, 0x62, 0x91, 0x0f, 0xad, 0xe5, 0x80, 0x34, 0xf3, 0xe0, 0xd1, 0xa1, 0x00, 0x90, 0x71, 0xe7,
         0xf3, 0xc3, 0x53, 0x17, 0x87, 0xa5, 0x19, 0xe2, 0x57, 0xd3, 0xa7, 0xfd, 0xfa, 0x5c, 0x19, 0xea,
@@ -35,6 +36,21 @@ int main() {
     for (int i = 0; i < 33; i++) {
         if (pubkey_data[i] != expect_data[i]) {
             return 4;
+        }
+    }
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
+#if defined(__riscv)
+    int n = argc > 0 ? atoi(argv[0]) : 1;
+#else
+    int n = argc > 1 ? atoi(argv[1]) : 1;
+#endif
+    for (int i = 0; i < n; i++) {
+        int r = execute();
+        if (r != 0) {
+            return r;
         }
     }
     return 0;
