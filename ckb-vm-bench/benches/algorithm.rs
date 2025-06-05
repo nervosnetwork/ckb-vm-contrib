@@ -10,6 +10,7 @@ use ckb_vm::{
     run,
 };
 use criterion::Criterion;
+use std::cell::LazyCell;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -30,6 +31,8 @@ const NATIVE_PATH_RSA: &str = "../ckb-vm-bench-scripts/build/release/rsa_native"
 const NATIVE_PATH_SECP256K1_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_ecdsa_native";
 const NATIVE_PATH_SECP256K1_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_schnorr_native";
 const NATIVE_PATH_SPHINCSPLUS_REF: &str = "../ckb-vm-bench-scripts/build/release/sphincsplus_ref_native";
+
+const NTIMES: LazyCell<String> = LazyCell::new(|| std::env::var("NTIMES").unwrap_or(String::from("1")));
 
 fn asm_ed25519(c: &mut Criterion) {
     c.bench_function("asm_ed25519", |b| {
@@ -251,27 +254,30 @@ fn run_asm(program: &Bytes) {
     let asm_core = AsmCoreMachine::new(ISA_IMC | ISA_B, VERSION2, u64::MAX);
     let core = DefaultMachineBuilder::new(asm_core).build();
     let mut machine = AsmMachine::new(core);
-    machine.load_program(&program, [].into_iter()).unwrap();
-    let ret = machine.run().unwrap();
-    assert_eq!(ret, 0);
+    let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
+    machine.load_program(&program, args.into_iter().map(Ok)).unwrap();
+    let exit = machine.run().unwrap();
+    assert_eq!(exit, 0);
 }
 
 fn run_interpret(program: &Bytes) {
-    let ret = run::<u64, SparseMemory<u64>>(&program, &[], RISCV_MAX_MEMORY).unwrap();
-    assert_eq!(ret, 0);
+    let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
+    let exit = run::<u64, SparseMemory<u64>>(&program, &args, RISCV_MAX_MEMORY).unwrap();
+    assert_eq!(exit, 0);
 }
 
 fn run_mop(program: &Bytes) {
     let asm_core = AsmCoreMachine::new(ISA_IMC | ISA_B | ISA_MOP, VERSION2, u64::MAX);
     let core = DefaultMachineBuilder::new(asm_core).build();
     let mut machine = AsmMachine::new(core);
-    machine.load_program(&program, [].into_iter()).unwrap();
-    let ret = machine.run().unwrap();
-    assert_eq!(ret, 0);
+    let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
+    machine.load_program(&program, args.into_iter().map(Ok)).unwrap();
+    let exit = machine.run().unwrap();
+    assert_eq!(exit, 0);
 }
 
 fn run_native<P: AsRef<Path>>(path: P) {
-    assert!(Command::new(path.as_ref()).status().unwrap().success());
+    assert!(Command::new(path.as_ref()).arg(NTIMES.as_str()).status().unwrap().success());
 }
 
 criterion_group!(
