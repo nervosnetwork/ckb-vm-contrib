@@ -36,62 +36,27 @@ endif
 
 default: build test
 
-SPHINCSPLUS_PARAMS := sphincs-shake-128f
-SPHINCSPLUS_THASH := simple
-SPHINCSPLUS_DIR := sphincsplus/ref
-SPHINCSPLUS_SOURCES = \
-	$(SPHINCSPLUS_DIR)/address.c \
-	$(SPHINCSPLUS_DIR)/merkle.c \
-	$(SPHINCSPLUS_DIR)/wots.c \
-	$(SPHINCSPLUS_DIR)/wotsx1.c \
-	$(SPHINCSPLUS_DIR)/utils.c \
-	$(SPHINCSPLUS_DIR)/utilsx1.c \
-	$(SPHINCSPLUS_DIR)/fors.c \
-	$(SPHINCSPLUS_DIR)/sign.c
-ifneq (,$(findstring shake,$(SPHINCSPLUS_PARAMS)))
-	SPHINCSPLUS_SOURCES += \
-		$(SPHINCSPLUS_DIR)/fips202.c \
-		$(SPHINCSPLUS_DIR)/hash_shake.c \
-		$(SPHINCSPLUS_DIR)/thash_shake_$(SPHINCSPLUS_THASH).c
-endif
-ifneq (,$(findstring haraka,$(SPHINCSPLUS_PARAMS)))
-	SPHINCSPLUS_SOURCES += \
-		$(SPHINCSPLUS_DIR)/haraka.c \
-		$(SPHINCSPLUS_DIR)/hash_haraka.c \
-		$(SPHINCSPLUS_DIR)/thash_haraka_$(SPHINCSPLUS_THASH).c
-endif
-ifneq (,$(findstring sha2,$(SPHINCSPLUS_PARAMS)))
-	SPHINCSPLUS_SOURCES += \
-		$(SPHINCSPLUS_DIR)/sha2.c \
-		$(SPHINCSPLUS_DIR)/hash_sha2.c \
-		$(SPHINCSPLUS_DIR)/thash_sha2_$(SPHINCSPLUS_THASH).c
-endif
-
 CFLAGS_CKBVM_BASE = --target=riscv64 -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
-CFLAGS_CKBVM_SPHINCSPLUS = $(CFLAGS_CKBVM_BASE) \
+CFLAGS_CKBVM_SECP256K1 = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
-	-I sphincsplus/ref \
+	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY
+CFLAGS_CKBVM_SECP256K1_ECDSA = $(CFLAGS_CKBVM_BASE) \
+	-isystem musl/release/include \
+	-Isecp256k1/include -Isecp256k1/src \
 	-Lmusl/release/lib -Lcompiler-rt-builtins-riscv/build \
 	-lc -lgcc -lcompiler-rt \
-	-DPARAMS=$(SPHINCSPLUS_PARAMS) \
 	-Wl,--gc-sections
 
 CFLAGS_NATIVE_BASE = $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
-CFLAGS_NATIVE_SPHINCSPLUS = $(CFLAGS_NATIVE_BASE) \
-	-I sphincsplus/ref \
-	-DPARAMS=$(SPHINCSPLUS_PARAMS) \
+CFLAGS_NATIVE_SECP256K1 = $(CFLAGS_NATIVE_BASE) \
+	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY
+CFLAGS_NATIVE_SECP256K1_ECDSA = $(CFLAGS_NATIVE_BASE) \
+	-Isecp256k1/include -Isecp256k1/src \
 	-Wl,--gc-sections
 
-build: compiler-rt-builtins-riscv musl sphincsplus
-	$(CLANG) -I sphincsplus/ref \
-		-DPARAMS=$(SPHINCSPLUS_PARAMS) \
-		-o sphincsplus_ref_sign \
-		$(SPHINCSPLUS_SOURCES) \
-		$(SPHINCSPLUS_DIR)/randombytes.c \
-		sphincsplus_ref_sign.c
-	./sphincsplus_ref_sign > sphincsplus_ref_data.h
-	$(CLANG) $(CFLAGS_CKBVM_SPHINCSPLUS) -o sphincsplus_ref_ckbvm sphincsplus_ref.c $(SPHINCSPLUS_SOURCES)
-	$(CLANG) $(CFLAGS_NATIVE_SPHINCSPLUS) -o sphincsplus_ref_native sphincsplus_ref.c $(SPHINCSPLUS_SOURCES)
+build: compiler-rt-builtins-riscv musl secp256k1
+	$(CLANG) $(CFLAGS_CKBVM_SECP256K1_ECDSA) -o secp256k1_ecdsa_ckbvm secp256k1_ecdsa.c secp256k1/build/ckbvm/*
+	$(CLANG) $(CFLAGS_NATIVE_SECP256K1_ECDSA) -o secp256k1_ecdsa_native secp256k1_ecdsa.c secp256k1/build/native/*
 	@set -eu; \
 	if [ "x$(BUILD_DIR)" != "x" ]; then \
 		for binary in $(BINARIES); do \
@@ -105,20 +70,30 @@ build: compiler-rt-builtins-riscv musl sphincsplus
 	fi
 
 compiler-rt-builtins-riscv:
-	ln -s ../../../deps/compiler-rt-builtins-riscv .
+	ln -s ../../../../deps/compiler-rt-builtins-riscv .
 	cd compiler-rt-builtins-riscv && make
 
 musl:
-	ln -s ../../../deps/musl .
+	ln -s ../../../../deps/musl .
 	cd musl && ./ckb/build.sh
 
-sphincsplus:
-	ln -s ../../../deps/sphincsplus .
+secp256k1:
+	ln -s ../../../../deps/secp256k1 .
+	mkdir -p secp256k1/build
+	mkdir -p secp256k1/build/ckbvm
+	mkdir -p secp256k1/build/native
+	$(CLANG) $(CFLAGS_CKBVM_SECP256K1) -c -o secp256k1/build/ckbvm/precomputed_ecmult.o secp256k1/src/precomputed_ecmult.c
+	$(CLANG) $(CFLAGS_CKBVM_SECP256K1) -c -o secp256k1/build/ckbvm/precomputed_ecmult_gen.o secp256k1/src/precomputed_ecmult_gen.c
+	$(CLANG) $(CFLAGS_CKBVM_SECP256K1) -c -o secp256k1/build/ckbvm/secp256k1.o secp256k1/src/secp256k1.c
+	$(CLANG) $(CFLAGS_NATIVE_SECP256K1) -c -o secp256k1/build/native/precomputed_ecmult.o secp256k1/src/precomputed_ecmult.c
+	$(CLANG) $(CFLAGS_NATIVE_SECP256K1) -c -o secp256k1/build/native/precomputed_ecmult_gen.o secp256k1/src/precomputed_ecmult_gen.c
+	$(CLANG) $(CFLAGS_NATIVE_SECP256K1) -c -o secp256k1/build/native/secp256k1.o secp256k1/src/secp256k1.c
 
 # test, check, clippy and fmt here are provided for completeness,
 # there is nothing wrong invoking cargo directly instead of make.
 test:
-	echo done
+	# cargo test $(CARGO_ARGS)
+	echo
 
 check:
 	cargo check $(CARGO_ARGS)
@@ -141,7 +116,7 @@ cargo:
 	cargo $(CARGO_CMD) $(CARGO_ARGS)
 
 clean:
-	cargo clean
+	rm -f $(BINARIES)
 
 prepare:
 	rustup target add riscv64imac-unknown-none-elf

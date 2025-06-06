@@ -1,38 +1,14 @@
 #[macro_use]
 extern crate criterion;
 
-use ckb_vm::{
-    Bytes, ISA_B, ISA_IMC, ISA_MOP, RISCV_MAX_MEMORY, SparseMemory,
-    machine::{
-        DefaultMachineBuilder, VERSION2,
-        asm::{AsmCoreMachine, AsmMachine},
-    },
-    run,
+use ckb_vm_test_suite::{
+    BINARY_PATH_ED25519, BINARY_PATH_K256_ECDSA, BINARY_PATH_K256_SCHNORR, BINARY_PATH_P256, BINARY_PATH_RSA,
+    BINARY_PATH_SECP256K1_ECDSA, BINARY_PATH_SECP256K1_SCHNORR, BINARY_PATH_SPHINCSPLUS_REF, NATIVE_PATH_ED25519,
+    NATIVE_PATH_K256_ECDSA, NATIVE_PATH_K256_SCHNORR, NATIVE_PATH_P256, NATIVE_PATH_RSA, NATIVE_PATH_SECP256K1_ECDSA,
+    NATIVE_PATH_SECP256K1_SCHNORR, NATIVE_PATH_SPHINCSPLUS_REF, run_asm, run_interpret, run_mop, run_native,
 };
 use criterion::Criterion;
-use std::cell::LazyCell;
 use std::fs;
-use std::path::Path;
-use std::process::Command;
-
-const BINARY_PATH_ED25519: &str = "../ckb-vm-bench-scripts/build/release/ed25519_ckbvm";
-const BINARY_PATH_K256_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/k256_ecdsa_ckbvm";
-const BINARY_PATH_K256_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/k256_schnorr_ckbvm";
-const BINARY_PATH_P256: &str = "../ckb-vm-bench-scripts/build/release/p256_ckbvm";
-const BINARY_PATH_RSA: &str = "../ckb-vm-bench-scripts/build/release/rsa_ckbvm";
-const BINARY_PATH_SECP256K1_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_ecdsa_ckbvm";
-const BINARY_PATH_SECP256K1_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_schnorr_ckbvm";
-const BINARY_PATH_SPHINCSPLUS_REF: &str = "../ckb-vm-bench-scripts/build/release/sphincsplus_ref_ckbvm";
-const NATIVE_PATH_ED25519: &str = "../ckb-vm-bench-scripts/build/release/ed25519_native";
-const NATIVE_PATH_K256_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/k256_ecdsa_native";
-const NATIVE_PATH_K256_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/k256_schnorr_native";
-const NATIVE_PATH_P256: &str = "../ckb-vm-bench-scripts/build/release/p256_native";
-const NATIVE_PATH_RSA: &str = "../ckb-vm-bench-scripts/build/release/rsa_native";
-const NATIVE_PATH_SECP256K1_ECDSA: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_ecdsa_native";
-const NATIVE_PATH_SECP256K1_SCHNORR: &str = "../ckb-vm-bench-scripts/build/release/secp256k1_schnorr_native";
-const NATIVE_PATH_SPHINCSPLUS_REF: &str = "../ckb-vm-bench-scripts/build/release/sphincsplus_ref_native";
-
-const NTIMES: LazyCell<String> = LazyCell::new(|| std::env::var("NTIMES").unwrap_or(String::from("1")));
 
 fn asm_ed25519(c: &mut Criterion) {
     c.bench_function("asm_ed25519", |b| {
@@ -248,36 +224,6 @@ fn native_sphincsplus_ref(c: &mut Criterion) {
     c.bench_function("native_sphincsplus_ref", |b| {
         b.iter(|| run_native(NATIVE_PATH_SPHINCSPLUS_REF));
     });
-}
-
-fn run_asm(program: &Bytes) {
-    let asm_core = AsmCoreMachine::new(ISA_IMC | ISA_B, VERSION2, u64::MAX);
-    let core = DefaultMachineBuilder::new(asm_core).build();
-    let mut machine = AsmMachine::new(core);
-    let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
-    machine.load_program(&program, args.into_iter().map(Ok)).unwrap();
-    let exit = machine.run().unwrap();
-    assert_eq!(exit, 0);
-}
-
-fn run_interpret(program: &Bytes) {
-    let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
-    let exit = run::<u64, SparseMemory<u64>>(&program, &args, RISCV_MAX_MEMORY).unwrap();
-    assert_eq!(exit, 0);
-}
-
-fn run_mop(program: &Bytes) {
-    let asm_core = AsmCoreMachine::new(ISA_IMC | ISA_B | ISA_MOP, VERSION2, u64::MAX);
-    let core = DefaultMachineBuilder::new(asm_core).build();
-    let mut machine = AsmMachine::new(core);
-    let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
-    machine.load_program(&program, args.into_iter().map(Ok)).unwrap();
-    let exit = machine.run().unwrap();
-    assert_eq!(exit, 0);
-}
-
-fn run_native<P: AsRef<Path>>(path: P) {
-    assert!(Command::new(path.as_ref()).arg(NTIMES.as_str()).status().unwrap().success());
 }
 
 criterion_group!(

@@ -15,11 +15,31 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-    - name: Setup
+    - name: Setup CKB VM
+      run: |
+        cd ckb-vm-test-suite
+        make ckb-vm
+    - name: Setup Clang
+      run: |
+        clang --version
+        sudo ln -s $(which llvm-ar-18) /usr/bin/llvm-ar || true
+        sudo ln -s $(which llvm-objcopy-18) /usr/bin/llvm-objcopy || true
+    - name: Setup Rust Target
+      run: |
+        rustup target add riscv64imac-unknown-none-elf
+    - name: Setup RISC-V GCC Toolchain
       run: |
         cd ckb-vm-test-suite
         docker run --rm -v $(pwd):/code nervos/ckb-riscv-gnu-toolchain:bionic-20210804 cp -r /riscv /code/
-    - name: Build
+    - name: Build Programs
+      run: |
+        cd ckb-vm-test-suite/programs
+        make build
+    - name: Build Bench
+      run: |
+        cd ckb-vm-test-suite
+        cargo build --bench algorithm
+    - name: Run Test
       run: |
         cd ckb-vm-test-suite
         RISCV=$(pwd)/riscv bash test.sh

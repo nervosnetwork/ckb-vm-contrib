@@ -13,6 +13,7 @@ $ ls $RISCV/bin/riscv64-unknown-elf-gcc
 Now you can run the test suite with the following steps:
 
 ```bash
+$ make ckb-vm
 $ RISCV=/opt/riscv ./test.sh
 ```
 
@@ -22,4 +23,12 @@ First install kcov by <https://github.com/SimonKagstrom/kcov/blob/master/INSTALL
 
 ```sh
 $ RISCV=/opt/riscv ./test.sh --coverage
+```
+
+# Benchmark
+
+Get a full performance review of ckb-vm:
+
+```sh
+$ make report-bench.txt
 ```

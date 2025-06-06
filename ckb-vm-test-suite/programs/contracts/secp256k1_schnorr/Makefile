@@ -70,15 +70,15 @@ build: compiler-rt-builtins-riscv musl secp256k1
 	fi
 
 compiler-rt-builtins-riscv:
-	ln -s ../../../deps/compiler-rt-builtins-riscv .
+	ln -s ../../../../deps/compiler-rt-builtins-riscv .
 	cd compiler-rt-builtins-riscv && make
 
 musl:
-	ln -s ../../../deps/musl .
+	ln -s ../../../../deps/musl .
 	cd musl && ./ckb/build.sh
 
 secp256k1:
-	ln -s ../../../deps/secp256k1 .
+	ln -s ../../../../deps/secp256k1 .
 	mkdir -p secp256k1/build
 	mkdir -p secp256k1/build/ckbvm
 	mkdir -p secp256k1/build/native
