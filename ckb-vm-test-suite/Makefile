@@ -7,7 +7,7 @@ ckb-vm: ../deps/ckb-vm
 report-bench.txt:
 	echo -n > $@
 	echo -n "os   : " >> $@
-	uname >> $@
+	uname -a >> $@
 	echo -n "arch : " >> $@
 	uname -m >> $@
 	echo -n "cpu  : " >> $@
