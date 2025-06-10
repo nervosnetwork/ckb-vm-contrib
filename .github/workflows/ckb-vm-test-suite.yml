@@ -22,8 +22,6 @@ jobs:
     - name: Setup Clang
       run: |
         clang --version
-        sudo ln -s $(which llvm-ar-18) /usr/bin/llvm-ar || true
-        sudo ln -s $(which llvm-objcopy-18) /usr/bin/llvm-objcopy || true
     - name: Setup Rust Target
       run: |
         rustup target add riscv64imac-unknown-none-elf

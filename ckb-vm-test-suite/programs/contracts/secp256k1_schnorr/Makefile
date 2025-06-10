@@ -71,7 +71,7 @@ build: compiler-rt-builtins-riscv musl secp256k1
 
 compiler-rt-builtins-riscv:
 	ln -s ../../../../deps/compiler-rt-builtins-riscv .
-	cd compiler-rt-builtins-riscv && make
+	cd compiler-rt-builtins-riscv && make CC=$(CLANG) AR=$(AR)
 
 musl:
 	ln -s ../../../../deps/musl .
