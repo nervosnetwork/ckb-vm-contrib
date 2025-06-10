@@ -66,6 +66,7 @@ report:
 		du -b build/$(MODE)/$$(basename $$contract)_ckbvm; \
 		du -h build/$(MODE)/$$(basename $$contract)_ckbvm; \
 		ckb-debugger --bin build/$(MODE)/$$(basename $$contract)_ckbvm; \
+		echo; \
 	done; \
 
 # Run a single make task for a specific contract. For example:

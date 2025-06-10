@@ -39,8 +39,8 @@ default: build test
 CFLAGS_CKBVM_BASE = --target=riscv64 -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
 CFLAGS_CKBVM_SECP256K1 = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
-	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY
-CFLAGS_CKBVM_SECP256K1_ECDSA = $(CFLAGS_CKBVM_BASE) \
+	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY -DENABLE_MODULE_SCHNORRSIG -DENABLE_MODULE_EXTRAKEYS
+CFLAGS_CKBVM_SECP256K1_SCHNORR = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-Isecp256k1/include -Isecp256k1/src \
 	-Lmusl/release/lib -Lcompiler-rt-builtins-riscv/build \
@@ -49,14 +49,14 @@ CFLAGS_CKBVM_SECP256K1_ECDSA = $(CFLAGS_CKBVM_BASE) \
 
 CFLAGS_NATIVE_BASE = $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
 CFLAGS_NATIVE_SECP256K1 = $(CFLAGS_NATIVE_BASE) \
-	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY
-CFLAGS_NATIVE_SECP256K1_ECDSA = $(CFLAGS_NATIVE_BASE) \
+	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY -DENABLE_MODULE_SCHNORRSIG -DENABLE_MODULE_EXTRAKEYS
+CFLAGS_NATIVE_SECP256K1_SCHNORR = $(CFLAGS_NATIVE_BASE) \
 	-Isecp256k1/include -Isecp256k1/src \
 	-Wl,--gc-sections
 
 build: compiler-rt-builtins-riscv musl secp256k1
-	$(CLANG) $(CFLAGS_CKBVM_SECP256K1_ECDSA) -o secp256k1_ecdsa_ckbvm secp256k1_ecdsa.c secp256k1/build/ckbvm/*
-	$(CLANG) $(CFLAGS_NATIVE_SECP256K1_ECDSA) -o secp256k1_ecdsa_native secp256k1_ecdsa.c secp256k1/build/native/*
+	$(CLANG) $(CFLAGS_CKBVM_SECP256K1_SCHNORR) -o secp256k1_schnorr_ckbvm secp256k1_schnorr.c secp256k1/build/ckbvm/*
+	$(CLANG) $(CFLAGS_NATIVE_SECP256K1_SCHNORR) -o secp256k1_schnorr_native secp256k1_schnorr.c secp256k1/build/native/*
 	@set -eu; \
 	if [ "x$(BUILD_DIR)" != "x" ]; then \
 		for binary in $(BINARIES); do \
@@ -70,15 +70,15 @@ build: compiler-rt-builtins-riscv musl secp256k1
 	fi
 
 compiler-rt-builtins-riscv:
-	ln -s ../../../deps/compiler-rt-builtins-riscv .
-	cd compiler-rt-builtins-riscv && make
+	ln -s ../../../../deps/compiler-rt-builtins-riscv .
+	cd compiler-rt-builtins-riscv && make CC=$(CLANG) AR=$(AR)
 
 musl:
-	ln -s ../../../deps/musl .
+	ln -s ../../../../deps/musl .
 	cd musl && ./ckb/build.sh
 
 secp256k1:
-	ln -s ../../../deps/secp256k1 .
+	ln -s ../../../../deps/secp256k1 .
 	mkdir -p secp256k1/build
 	mkdir -p secp256k1/build/ckbvm
 	mkdir -p secp256k1/build/native

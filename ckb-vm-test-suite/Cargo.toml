@@ -1,5 +1,5 @@
 [package]
-name = "ckb-vm-bench"
+name = "ckb-vm-test-suite"
 description = "CKB-VM benchmark runner"
 version.workspace = true
 license.workspace = true
@@ -10,8 +10,9 @@ authors.workspace = true
 default = ["ckb-vm/asm"]
 
 [dependencies]
-ckb-vm.workspace = true
+ckb-vm = { path = "ckb-vm" }
 criterion.workspace = true
+rand.workspace = true
 
 [[bench]]
 name = "algorithm"

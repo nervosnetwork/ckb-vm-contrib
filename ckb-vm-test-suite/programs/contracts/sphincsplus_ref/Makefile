@@ -105,15 +105,15 @@ build: compiler-rt-builtins-riscv musl sphincsplus
 	fi
 
 compiler-rt-builtins-riscv:
-	ln -s ../../../deps/compiler-rt-builtins-riscv .
-	cd compiler-rt-builtins-riscv && make
+	ln -s ../../../../deps/compiler-rt-builtins-riscv .
+	cd compiler-rt-builtins-riscv && make CC=$(CLANG) AR=$(AR)
 
 musl:
-	ln -s ../../../deps/musl .
+	ln -s ../../../../deps/musl .
 	cd musl && ./ckb/build.sh
 
 sphincsplus:
-	ln -s ../../../deps/sphincsplus .
+	ln -s ../../../../deps/sphincsplus .
 
 # test, check, clippy and fmt here are provided for completeness,
 # there is nothing wrong invoking cargo directly instead of make.

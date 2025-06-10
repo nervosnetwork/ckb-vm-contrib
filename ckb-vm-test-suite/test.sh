@@ -36,7 +36,8 @@ fi
 
 if [ ! -d "$TOP/ckb-vm" ]
 then
-    git clone https://github.com/nervosnetwork/ckb-vm "$TOP/ckb-vm"
+    git clone https://github.com/nervosnetwork/ckb-vm "$TOP/../deps/ckb-vm"
+    ln -s ../deps/ckb-vm .
 fi
 
 if [ "$RUNTESTS" -eq "1" ]
@@ -124,5 +125,7 @@ find work -name "*.log" -delete && make RISCV_TARGET=ckb-vm XLEN=64 RISCV_DEVICE
 find work -name "*.log" -delete && make RISCV_TARGET=ckb-vm XLEN=64 RISCV_DEVICE=M TARGET_SIM="$ASM64" $COMPLIANCE_TARGET
 find work -name "*.log" -delete && make RISCV_TARGET=ckb-vm XLEN=64 RISCV_DEVICE=C TARGET_SIM="$ASM64" $COMPLIANCE_TARGET
 find work -name "*.log" -delete && make RISCV_TARGET=ckb-vm XLEN=64 RISCV_DEVICE=B TARGET_SIM="$ASM64" $COMPLIANCE_TARGET
+
+cargo test
 
 echo "All tests are passed!"
