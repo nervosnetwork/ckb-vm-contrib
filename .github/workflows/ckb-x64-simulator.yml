@@ -3,19 +3,26 @@ name: ckb-x64-simulator
 on:
   pull_request:
     branches: [ main ]
-    paths: "ckb-x64-simulator/**"
+    paths: ["ckb-x64-simulator/**", "Cargo.toml", "Cargo.lock"]
   push:
     branches: [ main ]
-    paths: "ckb-x64-simulator/**"
+    paths: ["ckb-x64-simulator/**", "Cargo.toml", "Cargo.lock"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Setup CKB VM
+      run: |
+        cd ckb-vm-test-suite
+        make ckb-vm
     - name: Setup Clang
       run: |
         clang --version
+    - name: Setup Clippy
+      run: |
+        rustup component add clippy
     - name: Setup Rust Target
       run: |
         rustup target add riscv64imac-unknown-none-elf
