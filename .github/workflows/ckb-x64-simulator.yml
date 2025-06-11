@@ -3,10 +3,10 @@ name: ckb-x64-simulator
 on:
   pull_request:
     branches: [ main ]
-    paths: ["ckb-x64-simulator/**", "Cargo.toml"]
+    paths: ["ckb-x64-simulator/**", "Cargo.toml", "Cargo.lock"]
   push:
     branches: [ main ]
-    paths: ["ckb-x64-simulator/**", "Cargo.toml"]
+    paths: ["ckb-x64-simulator/**", "Cargo.toml", "Cargo.lock"]
 
 jobs:
   build:

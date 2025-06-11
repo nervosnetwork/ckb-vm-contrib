@@ -3,10 +3,10 @@ name: spike-sys
 on:
   pull_request:
     branches: [ main ]
-    paths: ["spike-sys/**", "Cargo.toml"]
+    paths: ["spike-sys/**", "Cargo.toml", "Cargo.lock"]
   push:
     branches: [ main ]
-    paths: ["spike-sys/**", "Cargo.toml"]
+    paths: ["spike-sys/**", "Cargo.toml", "Cargo.lock"]
 
 jobs:
   build:
