@@ -3,10 +3,10 @@ name: ckb-vm-test-suite
 on:
   pull_request:
     branches: [ main ]
-    paths: "ckb-vm-test-suite/**"
+    paths: ["ckb-vm-test-suite/**", "Cargo.toml"]
   push:
     branches: [ main ]
-    paths: "ckb-vm-test-suite/**"
+    paths: ["ckb-vm-test-suite/**", "Cargo.toml"]
 
 jobs:
   build:
