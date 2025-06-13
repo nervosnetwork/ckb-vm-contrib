@@ -1,6 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["ckb-mock-tx-types", "ckb-vm-test-suite", "ckb-x64-simulator", "spike-sys"]
+members = [
+  "ckb-mock-tx-types",
+  "ckb-script-size-analyzer",
+  "ckb-vm-test-suite",
+  "ckb-x64-simulator",
+  "spike-sys"
+]
 exclude = ["deps/ckb-vm"]
 
 [workspace.package]
@@ -22,8 +28,11 @@ ckb-x64-simulator = { path = "ckb-x64-simulator", version = "0.202.0" }
 spike-sys = { path = "spike-sys", version = "0.202.0" }
 
 # Other common crates
+clap = { version = "4.5.40", features = ["cargo", "derive"] }
 criterion = "0.5.1"
+object = "0.37.1"
 rand = "0.9"
+rustc-demangle = "0.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_json = "1.0"
