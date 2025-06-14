@@ -1,9 +1,3 @@
-../deps/ckb-vm:
-	git clone https://github.com/nervosnetwork/ckb-vm $@
-
-ckb-vm: ../deps/ckb-vm
-	ln -s $< .
-
 report-bench.txt:
 	echo -n > $@
 	echo -n "os   : " >> $@

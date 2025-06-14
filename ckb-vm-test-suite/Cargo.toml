@@ -10,7 +10,7 @@ authors.workspace = true
 default = ["ckb-vm/asm"]
 
 [dependencies]
-ckb-vm = { path = "ckb-vm" }
+ckb-vm = { path = "../deps/ckb-vm" }
 criterion.workspace = true
 rand.workspace = true
 

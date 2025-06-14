@@ -30,13 +30,14 @@ fi
 # If requested, make sure we are using latest revision of CKB VM
 if [ "$1" = "--update-ckb-vm" ]
 then
-    rm -rf ckb-vm
+    cd $TOP/../deps/ckb-vm
+    git pull origin develop
+    cd $TOP
     shift
 fi
 
 if [ ! -d "$TOP/ckb-vm" ]
 then
-    git clone https://github.com/nervosnetwork/ckb-vm "$TOP/../deps/ckb-vm"
     ln -s ../deps/ckb-vm .
 fi
 
