@@ -2,9 +2,11 @@
 name = "spike-sys"
 description = "Rust bindings for spike"
 exclude = ["riscv-isa-sim"]
-version.workspace = true
-license.workspace = true
-edition.workspace = true
-authors.workspace = true
+version = "0.202.0"
+license = "MIT"
+edition = "2024"
+authors = ["Nervos Core Dev <dev@nervos.org>"]
 
 [dependencies]
+
+[workspace]

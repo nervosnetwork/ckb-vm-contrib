@@ -10,10 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Setup CKB VM
-      run: |
-        cd ckb-vm-test-suite
-        make ckb-vm
+      with:
+        submodules: recursive
     - name: Steup Device Tree Compiler
       run: |
         sudo apt install device-tree-compiler
