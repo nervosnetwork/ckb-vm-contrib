@@ -143,6 +143,12 @@ cargo:
 clean:
 	cargo clean
 
+deps-clean:
+	cd compiler-rt-builtins-riscv && make clean || true
+	cd musl && make clean || true
+	rm -rf compiler-rt-builtins-riscv musl sphincsplus || true
+
+
 prepare:
 	rustup target add riscv64imac-unknown-none-elf
 

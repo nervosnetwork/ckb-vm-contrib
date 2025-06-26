@@ -118,6 +118,12 @@ cargo:
 clean:
 	rm -f $(BINARIES)
 
+deps-clean:
+	cd compiler-rt-builtins-riscv && make clean || true
+	cd musl && make clean || true
+	rm -rf secp256k1/build || true
+	rm -rf compiler-rt-builtins-riscv musl secp256k1 || true
+
 prepare:
 	rustup target add riscv64imac-unknown-none-elf
 

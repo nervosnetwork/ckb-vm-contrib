@@ -106,6 +106,12 @@ clean:
 	cargo clean
 	$(foreach dir, $(wildcard contracts/*), $(MAKE) -e -C $(dir) clean;)
 
+deps-clean:
+	make -C contracts/secp256k1_ecdsa deps-clean
+	make -C contracts/secp256k1_schnorr deps-clean
+	make -C contracts/sphincsplus_ref deps-clean
+
+
 TEMPLATE_TYPE := --git
 TEMPLATE_REPO := https://github.com/cryptape/ckb-script-templates
 CRATE :=
