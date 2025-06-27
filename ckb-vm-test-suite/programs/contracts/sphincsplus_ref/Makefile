@@ -19,6 +19,8 @@ MODE := release
 # we use a bash script with somes heuristics to find clang in current system.
 CLANG := $(shell $(TOP)/scripts/find_clang)
 CLANG_OPTIMIZER := -O2
+CLANG_VERSION := $(shell $(CLANG) --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+CLANG_VERSION_MAJOR := $(shell echo $(CLANG_VERSION) | cut -d. -f1)
 AR := $(subst clang,llvm-ar,$(CLANG))
 OBJCOPY := $(subst clang,llvm-objcopy,$(CLANG))
 CLANG_FORMAT := $(subst clang,clang-format,$(CLANG))
@@ -67,7 +69,7 @@ ifneq (,$(findstring sha2,$(SPHINCSPLUS_PARAMS)))
 		$(SPHINCSPLUS_DIR)/thash_sha2_$(SPHINCSPLUS_THASH).c
 endif
 
-CFLAGS_CKBVM_BASE = --target=riscv64 -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
+CFLAGS_CKBVM_BASE = --target=riscv64-unknown-elf -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
 CFLAGS_CKBVM_SPHINCSPLUS = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-I sphincsplus/ref \
@@ -75,6 +77,10 @@ CFLAGS_CKBVM_SPHINCSPLUS = $(CFLAGS_CKBVM_BASE) \
 	-lc -lgcc -lcompiler-rt \
 	-DPARAMS=$(SPHINCSPLUS_PARAMS) \
 	-Wl,--gc-sections
+# Compared to clang-18 and clang-19, clang-20 changes the default arguments passed to ld.lld. So add this line.
+ifeq ($(shell test $(CLANG_VERSION_MAJOR) -ge 20; echo $$?), 0)
+    CFLAGS_CKBVM_SPHINCSPLUS += -nostartfiles -nodefaultlibs
+endif
 
 CFLAGS_NATIVE_BASE = $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
 CFLAGS_NATIVE_SPHINCSPLUS = $(CFLAGS_NATIVE_BASE) \
