@@ -1,0 +1,14 @@
+[package]
+name = "ckb-vm-fuzzing-utils"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+int-enum.workspace = true
+ckb-vm.workspace = true
+ckb-std = { workspace = true, features = ["stub-syscalls"] }
+regex.workspace = true
+
+[features]
+default = ["std"]
+std = ["regex/std"]
