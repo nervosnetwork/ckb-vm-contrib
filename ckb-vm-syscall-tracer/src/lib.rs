@@ -39,12 +39,43 @@ use ckb_vm::{
     registers::{A0, A1, A2, A3, A4, A5, A7},
     snapshot2::DataSource,
 };
-use ckb_vm_fuzzing_utils::SyscallCode;
 use clap::{Args, ValueEnum};
+use int_enum::IntEnum;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
+
+#[repr(u64)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, IntEnum)]
+pub enum SyscallCode {
+    LoadTransaction = 2051,
+    LoadScript = 2052,
+    LoadTxHash = 2061,
+    LoadScriptHash = 2062,
+    LoadCell = 2071,
+    LoadHeader = 2072,
+    LoadInput = 2073,
+    LoadWitness = 2074,
+    LoadCellByField = 2081,
+    LoadHeaderByField = 2082,
+    LoadInputByField = 2083,
+    LoadCellDataAsCode = 2091,
+    LoadCellData = 2092,
+    LoadBlockExtension = 2104,
+    VmVersion = 2041,
+    CurrentCycles = 2042,
+    Exec = 2043,
+    Spawn = 2601,
+    Wait = 2602,
+    ProcessId = 2603,
+    Pipe = 2604,
+    Write = 2605,
+    Read = 2606,
+    InheritedFd = 2607,
+    Close = 2608,
+    Debug = 2177,
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum CollectorKind {

@@ -19,8 +19,6 @@ default = ["asm"]
 asm = ["ckb-script/asm"]
 
 [dependencies]
-ckb-vm-fuzzing-utils = { path = "../ckb-vm-fuzzing-utils" }
-
 ckb-chain-spec.workspace = true
 ckb-mock-tx-types.workspace = true
 ckb-script.workspace = true
@@ -35,6 +33,7 @@ prost.workspace = true
 prost-reflect = { workspace = true, features = ["derive", "text-format"] }
 serde.workspace = true
 serde_json.workspace = true
+int-enum.workspace = true
 
 
 [build-dependencies]

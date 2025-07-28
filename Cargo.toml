@@ -5,7 +5,6 @@ members = [
   "ckb-script-size-analyzer",
   "ckb-vm-test-suite",
   "ckb-x64-simulator",
-  "ckb-vm-fuzzing-utils",
   "ckb-vm-syscall-tracer",
 ]
 exclude = ["deps/ckb-vm"]

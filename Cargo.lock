@@ -664,16 +664,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ckb-vm-fuzzing-utils"
-version = "0.1.0"
-dependencies = [
- "ckb-std",
- "ckb-vm 0.24.14",
- "int-enum",
- "regex",
-]
-
-[[package]]
 name = "ckb-vm-syscall-tracer"
 version = "0.1.0"
 dependencies = [
@@ -684,9 +674,9 @@ dependencies = [
  "ckb-traits",
  "ckb-types",
  "ckb-vm 0.24.14",
- "ckb-vm-fuzzing-utils",
  "clap",
  "hex",
+ "int-enum",
  "once_cell",
  "prost",
  "prost-build",
