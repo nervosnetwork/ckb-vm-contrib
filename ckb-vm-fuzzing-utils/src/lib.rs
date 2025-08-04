@@ -9,8 +9,8 @@ use ckb_std::{
     syscalls::traits::{Error, IoResult, SyscallImpls},
 };
 use ckb_vm::{
-    Error as VMError, Memory, Register, SupportMachine, Syscalls,
-    memory::load_c_string_byte_by_byte,
+    Error as VMError, Memory, RISCV_PAGESIZE, Register, SupportMachine, Syscalls,
+    memory::{FLAG_EXECUTABLE, FLAG_FREEZED, load_c_string_byte_by_byte},
     registers::{A0, A1, A2, A3, A4, A5, A7},
 };
 use core::ffi::CStr;
@@ -177,13 +177,29 @@ where
                 impls.load_input_by_field(buf, offset, index, source, field)
             })?,
             SyscallCode::LoadCellDataAsCode => {
-                let addr = machine.registers()[A0].to_u64() as *mut u8;
-                let memory_size = machine.registers()[A1].to_u64() as usize;
+                let addr = machine.registers()[A0].to_u64();
+                let memory_size = machine.registers()[A1].to_u64();
                 let content_offset = machine.registers()[A2].to_u64() as usize;
                 let content_size = machine.registers()[A3].to_u64() as usize;
                 let index = machine.registers()[A4].to_u64() as usize;
                 let source = machine.registers()[A5].to_u64().try_into().expect("parse source");
-                let result = self.impls.load_cell_code(addr, memory_size, content_offset, content_size, index, source);
+
+                let mut buf = vec![0u8; memory_size as usize];
+                let result = self.impls.load_cell_code(
+                    buf.as_mut_ptr() as *mut u8,
+                    memory_size as usize,
+                    content_offset,
+                    content_size,
+                    index,
+                    source,
+                );
+                machine.memory_mut().store_bytes(addr, &buf)?;
+                let mut current_addr = addr;
+                while current_addr < addr + memory_size {
+                    let page = current_addr / RISCV_PAGESIZE as u64;
+                    machine.memory_mut().set_flag(page, FLAG_EXECUTABLE | FLAG_FREEZED)?;
+                    current_addr += RISCV_PAGESIZE as u64;
+                }
                 self.set_return(result, machine);
             }
             SyscallCode::LoadCellData => self.load_ois(machine, |buf, impls, offset, index, source| {

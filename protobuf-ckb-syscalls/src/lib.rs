@@ -175,14 +175,28 @@ impl SyscallImpls for ProtobufBasedSyscallImpls {
 
     fn load_cell_code(
         &self,
-        _buf_ptr: *mut u8,
-        _len: usize,
+        buf_ptr: *mut u8,
+        len: usize,
         _content_offset: usize,
         _content_size: usize,
         _index: usize,
         _source: Source,
     ) -> Result<(), Error> {
-        panic!("Load cell data as code is not suported!");
+        match self.syscall() {
+            Some(traces::syscall::Value::ReturnWithCode(code)) => {
+                if code != 0 {
+                    return Err(Error::try_from(code as u64).unwrap());
+                }
+                Ok(())
+            }
+            Some(traces::syscall::Value::IoDataAsCode(io_data_as_code)) => {
+                unsafe {
+                    std::ptr::copy_nonoverlapping(io_data_as_code.available_data.as_ptr(), buf_ptr, len);
+                }
+                Ok(())
+            }
+            _ => unreachable!(),
+        }
     }
 
     fn load_cell_data(&self, buf: &mut [u8], offset: usize, _index: usize, _source: Source) -> IoResult {
