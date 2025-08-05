@@ -189,9 +189,9 @@ impl SyscallImpls for ProtobufBasedSyscallImpls {
                 }
                 Ok(())
             }
-            Some(traces::syscall::Value::IoDataAsCode(io_data_as_code)) => {
+            Some(traces::syscall::Value::IoData(io_data)) => {
                 unsafe {
-                    std::ptr::copy_nonoverlapping(io_data_as_code.available_data.as_ptr(), buf_ptr, len);
+                    std::ptr::copy_nonoverlapping(io_data.available_data.as_ptr(), buf_ptr, len);
                 }
                 Ok(())
             }

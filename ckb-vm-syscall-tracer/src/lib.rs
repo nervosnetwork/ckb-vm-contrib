@@ -673,8 +673,9 @@ fn apply_partial_content<M: SupportMachine>(
             }
             let data = machine.memory_mut().load_bytes(*data_addr, *input_length)?;
             traces::Syscall {
-                value: Some(traces::syscall::Value::IoDataAsCode(traces::IoDataAsCode {
+                value: Some(traces::syscall::Value::IoData(traces::IoData {
                     available_data: data.as_ref().to_vec(),
+                    additional_length: 0,
                 })),
             }
         }
