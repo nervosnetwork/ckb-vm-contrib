@@ -353,7 +353,6 @@ where
     }
 }
 
-
 /// While SyscallImplsSynchronousWrapper provides a pure adapter converting
 /// ckb_vm::Syscalls style interfce to ckb_std::syscalls::traits::SyscallImpls
 /// style interface. Problems are still left on the table: in CKB's setup,
