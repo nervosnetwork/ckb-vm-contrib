@@ -177,29 +177,13 @@ where
                 impls.load_input_by_field(buf, offset, index, source, field)
             })?,
             SyscallCode::LoadCellDataAsCode => {
-                let addr = machine.registers()[A0].to_u64();
-                let memory_size = machine.registers()[A1].to_u64();
+                let addr = machine.registers()[A0].to_u64() as *mut u8;
+                let memory_size = machine.registers()[A1].to_u64() as usize;
                 let content_offset = machine.registers()[A2].to_u64() as usize;
                 let content_size = machine.registers()[A3].to_u64() as usize;
                 let index = machine.registers()[A4].to_u64() as usize;
                 let source = machine.registers()[A5].to_u64().try_into().expect("parse source");
-
-                let mut buf = vec![0u8; memory_size as usize];
-                let result = self.impls.load_cell_code(
-                    buf.as_mut_ptr() as *mut u8,
-                    memory_size as usize,
-                    content_offset,
-                    content_size,
-                    index,
-                    source,
-                );
-                machine.memory_mut().store_bytes(addr, &buf)?;
-                let mut current_addr = addr;
-                while current_addr < addr + memory_size {
-                    let page = current_addr / RISCV_PAGESIZE as u64;
-                    machine.memory_mut().set_flag(page, FLAG_EXECUTABLE | FLAG_FREEZED)?;
-                    current_addr += RISCV_PAGESIZE as u64;
-                }
+                let result = self.impls.load_cell_code(addr, memory_size, content_offset, content_size, index, source);
                 self.set_return(result, machine);
             }
             SyscallCode::LoadCellData => self.load_ois(machine, |buf, impls, offset, index, source| {
@@ -366,6 +350,78 @@ where
             }
         }
         Ok(true)
+    }
+}
+
+
+/// While SyscallImplsSynchronousWrapper provides a pure adapter converting
+/// ckb_vm::Syscalls style interfce to ckb_std::syscalls::traits::SyscallImpls
+/// style interface. Problems are still left on the table: in CKB's setup,
+/// SyscallImpls has no way of implementing load_cell_code. ckb-vm's Memory
+/// API is required to setup proper memory permissions required by load_cell_code.
+/// As SyscallImplsSynchronousWrapper is strictly defined as an adaptter pattern,
+/// it should not handle memory permission settings. Given a different setup,
+/// we might want to leverage SyscallImplsSynchronousWrapper for different
+/// use cases where load_cell_code might be implemented via alternative solution.
+///
+/// To cope with this issue, we introduced CkbFlavoredImplSyscalls, which assumes
+/// a CKB style design, this way we can implement load_cell_code properly via
+/// APIs provided by ckb-vm.
+pub struct CkbFlavoredImplSyscalls<S, M>(SyscallImplsSynchronousWrapper<S, M>);
+
+impl<S, M> CkbFlavoredImplSyscalls<S, M> {
+    pub fn new(impls: S) -> Self {
+        Self(SyscallImplsSynchronousWrapper::new(impls))
+    }
+
+    pub fn impls(&self) -> &S {
+        &self.0.impls
+    }
+
+    pub fn impls_mut(&mut self) -> &mut S {
+        &mut self.0.impls
+    }
+}
+
+impl<S, M> Syscalls<M> for CkbFlavoredImplSyscalls<S, M>
+where
+    S: SyscallImpls + Send,
+    M: SupportMachine + Send,
+{
+    fn initialize(&mut self, machine: &mut M) -> Result<(), VMError> {
+        self.0.initialize(machine)
+    }
+
+    fn ecall(&mut self, machine: &mut M) -> Result<bool, VMError> {
+        if let Ok(SyscallCode::LoadCellDataAsCode) = machine.registers()[A7].to_u64().try_into() {
+            let addr = machine.registers()[A0].to_u64();
+            let memory_size = machine.registers()[A1].to_u64();
+            let content_offset = machine.registers()[A2].to_u64() as usize;
+            let content_size = machine.registers()[A3].to_u64() as usize;
+            let index = machine.registers()[A4].to_u64() as usize;
+            let source = machine.registers()[A5].to_u64().try_into().expect("parse source");
+
+            let mut buf = vec![0u8; memory_size as usize];
+            let result = self.impls().load_cell_code(
+                buf.as_mut_ptr() as *mut u8,
+                memory_size as usize,
+                content_offset,
+                content_size,
+                index,
+                source,
+            );
+            machine.memory_mut().store_bytes(addr, &buf)?;
+            let mut current_addr = addr;
+            while current_addr < addr + memory_size {
+                let page = current_addr / RISCV_PAGESIZE as u64;
+                machine.memory_mut().set_flag(page, FLAG_EXECUTABLE | FLAG_FREEZED)?;
+                current_addr += RISCV_PAGESIZE as u64;
+            }
+            self.0.set_return(result, machine);
+
+            return Ok(true);
+        }
+        self.0.ecall(machine)
     }
 }
 
