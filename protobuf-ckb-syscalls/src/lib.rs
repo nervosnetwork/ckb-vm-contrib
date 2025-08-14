@@ -22,7 +22,12 @@ use ckb_std::{
     ckb_constants::{CellField, HeaderField, InputField, Source},
     syscalls::traits::{Error, IoResult, SyscallImpls},
 };
-use ckb_vm_fuzzing_utils::{CkbFlavoredImplSyscalls, exit_with_panic, flatten_args};
+use ckb_vm::{
+    Error as VMError, Memory, RISCV_PAGESIZE, Register, SupportMachine, Syscalls,
+    memory::{FLAG_EXECUTABLE, FLAG_FREEZED},
+    registers::{A0, A1, A2, A3, A4, A5, A7},
+};
+use ckb_vm_fuzzing_utils::{SyscallCode, SyscallImplsSynchronousWrapper, exit_with_panic, flatten_args};
 use core::ffi::CStr;
 use prost::Message;
 use spin::Mutex;
@@ -50,9 +55,6 @@ pub struct ProtobufBasedSyscallImpls {
     args: Vec<Vec<u8>>,
     debug_printer: Box<dyn Fn(&str) + Send + Sync>,
 }
-
-/// When you want to use protobuf based syscalls for a ckb-vm::Machine.
-pub type ProtobufBasedSyscalls<M> = CkbFlavoredImplSyscalls<ProtobufBasedSyscallImpls, M>;
 
 impl ProtobufBasedSyscallImpls {
     fn new(syscalls: traces::Syscalls) -> Option<Self> {
@@ -179,28 +181,14 @@ impl SyscallImpls for ProtobufBasedSyscallImpls {
 
     fn load_cell_code(
         &self,
-        buf_ptr: *mut u8,
-        len: usize,
+        _buf_ptr: *mut u8,
+        _len: usize,
         _content_offset: usize,
         _content_size: usize,
         _index: usize,
         _source: Source,
     ) -> Result<(), Error> {
-        match self.syscall() {
-            Some(traces::syscall::Value::ReturnWithCode(code)) => {
-                if code != 0 {
-                    return Err(Error::try_from(code as u64).unwrap());
-                }
-                Ok(())
-            }
-            Some(traces::syscall::Value::IoData(io_data)) => {
-                unsafe {
-                    std::ptr::copy_nonoverlapping(io_data.available_data.as_ptr(), buf_ptr, len);
-                }
-                Ok(())
-            }
-            _ => unreachable!(),
-        }
+        panic!("Load cell data as code is not suported!");
     }
 
     fn load_cell_data(&self, buf: &mut [u8], offset: usize, _index: usize, _source: Source) -> IoResult {
@@ -399,3 +387,92 @@ impl SyscallImpls for ProtobufBasedSyscallImpls {
         self.io_syscall(buf, offset, None)
     }
 }
+
+/// While SyscallImplsSynchronousWrapper provides a pure adapter converting
+/// ckb_vm::Syscalls style interfce to ckb_std::syscalls::traits::SyscallImpls
+/// style interface. Problems are still left on the table: in CKB's setup,
+/// SyscallImpls has no way of implementing load_cell_code. ckb-vm's Memory
+/// API is required to setup proper memory permissions required by load_cell_code.
+/// As SyscallImplsSynchronousWrapper is strictly defined as an adaptter pattern,
+/// it should not handle memory permission settings. Given a different setup,
+/// we might want to leverage SyscallImplsSynchronousWrapper for different
+/// use cases where load_cell_code might be implemented via alternative solution.
+///
+/// To cope with this issue, we introduced CkbFlavoredImplSyscalls, which assumes
+/// a CKB style design, this way we can implement load_cell_code properly via
+/// APIs provided by ckb-vm.
+pub struct CkbFlavoredImplSyscalls<S, M>(SyscallImplsSynchronousWrapper<S, M>);
+
+impl<S, M> CkbFlavoredImplSyscalls<S, M> {
+    pub fn new(impls: S) -> Self {
+        Self(SyscallImplsSynchronousWrapper::new(impls))
+    }
+
+    pub fn impls(&self) -> &S {
+        &self.0.impls
+    }
+
+    pub fn impls_mut(&mut self) -> &mut S {
+        &mut self.0.impls
+    }
+}
+
+impl<M> Syscalls<M> for CkbFlavoredImplSyscalls<ProtobufBasedSyscallImpls, M>
+where
+    M: SupportMachine + Send,
+{
+    fn initialize(&mut self, machine: &mut M) -> Result<(), VMError> {
+        self.0.initialize(machine)
+    }
+
+    fn ecall(&mut self, machine: &mut M) -> Result<bool, VMError> {
+        if let Ok(SyscallCode::LoadCellDataAsCode) = machine.registers()[A7].to_u64().try_into() {
+            let addr = machine.registers()[A0].to_u64();
+            let memory_size = machine.registers()[A1].to_u64();
+            let _content_offset = machine.registers()[A2].to_u64() as usize;
+            let _content_size = machine.registers()[A3].to_u64() as usize;
+            let _index = machine.registers()[A4].to_u64() as usize;
+            let _source: Source = machine.registers()[A5].to_u64().try_into().expect("parse source");
+
+            let mut buf = vec![0u8; memory_size as usize];
+            let result: Result<(), Error> = match self.impls().syscall() {
+                Some(traces::syscall::Value::ReturnWithCode(code)) => {
+                    assert!(code != 0);
+                    Err(Error::try_from(code as u64).unwrap())
+                }
+                Some(traces::syscall::Value::IoData(io_data)) => {
+                    unsafe {
+                        std::ptr::copy_nonoverlapping(
+                            io_data.available_data.as_ptr(),
+                            buf.as_mut_ptr(),
+                            memory_size as usize,
+                        );
+                    }
+                    Ok(())
+                }
+                _ => unreachable!(),
+            };
+
+            match result {
+                Ok(_) => {
+                    machine.memory_mut().store_bytes(addr, &buf)?;
+                    let mut current_addr = addr;
+                    while current_addr < addr + memory_size {
+                        let page = current_addr / RISCV_PAGESIZE as u64;
+                        machine.memory_mut().set_flag(page, FLAG_EXECUTABLE | FLAG_FREEZED)?;
+                        current_addr += RISCV_PAGESIZE as u64;
+                    }
+                    machine.set_register(A0, M::REG::from_u64(0));
+                }
+                Err(err) => {
+                    machine.set_register(A0, M::REG::from_u64(err.into()));
+                }
+            }
+            return Ok(true);
+        }
+        self.0.ecall(machine)
+    }
+}
+
+/// When you want to use protobuf based syscalls for a ckb-vm::Machine.
+pub type ProtobufBasedSyscalls<M> = CkbFlavoredImplSyscalls<ProtobufBasedSyscallImpls, M>;
