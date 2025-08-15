@@ -397,27 +397,23 @@ impl SyscallImpls for ProtobufBasedSyscallImpls {
 /// it should not handle memory permission settings. Given a different setup,
 /// we might want to leverage SyscallImplsSynchronousWrapper for different
 /// use cases where load_cell_code might be implemented via alternative solution.
-///
-/// To cope with this issue, we introduced CkbFlavoredImplSyscalls, which assumes
-/// a CKB style design, this way we can implement load_cell_code properly via
-/// APIs provided by ckb-vm.
-pub struct CkbFlavoredImplSyscalls<S, M>(SyscallImplsSynchronousWrapper<S, M>);
+pub struct ProtobufBasedSyscalls<M>(SyscallImplsSynchronousWrapper<ProtobufBasedSyscallImpls, M>);
 
-impl<S, M> CkbFlavoredImplSyscalls<S, M> {
-    pub fn new(impls: S) -> Self {
+impl<M> ProtobufBasedSyscalls<M> {
+    pub fn new(impls: ProtobufBasedSyscallImpls) -> Self {
         Self(SyscallImplsSynchronousWrapper::new(impls))
     }
 
-    pub fn impls(&self) -> &S {
+    pub fn impls(&self) -> &ProtobufBasedSyscallImpls {
         &self.0.impls
     }
 
-    pub fn impls_mut(&mut self) -> &mut S {
+    pub fn impls_mut(&mut self) -> &mut ProtobufBasedSyscallImpls {
         &mut self.0.impls
     }
 }
 
-impl<M> Syscalls<M> for CkbFlavoredImplSyscalls<ProtobufBasedSyscallImpls, M>
+impl<M> Syscalls<M> for ProtobufBasedSyscalls<M>
 where
     M: SupportMachine + Send,
 {
@@ -473,6 +469,3 @@ where
         self.0.ecall(machine)
     }
 }
-
-/// When you want to use protobuf based syscalls for a ckb-vm::Machine.
-pub type ProtobufBasedSyscalls<M> = CkbFlavoredImplSyscalls<ProtobufBasedSyscallImpls, M>;
