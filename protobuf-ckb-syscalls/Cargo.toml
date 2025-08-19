@@ -8,6 +8,7 @@ authors.workspace = true
 
 [dependencies]
 ckb-vm-fuzzing-utils = { path = "../ckb-vm-fuzzing-utils" }
+ckb-vm.workspace = true
 ckb-std.workspace = true
 
 once_cell.workspace = true

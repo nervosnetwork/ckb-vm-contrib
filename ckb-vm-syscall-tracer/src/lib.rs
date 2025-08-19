@@ -568,6 +568,7 @@ impl<M: SupportMachine> Syscalls<M> for SyscallBasedCollectorVMSyscalls<M> {
 enum PartialSyscallContent {
     ReturnWithCode,
     IoData { data_addr: u64, input_length: u64 },
+    IoDataAsCode { data_addr: u64, input_length: u64 },
     Exec { args: Vec<Vec<u8>> },
     Spawn { args: Vec<Vec<u8>> },
     Wait,
@@ -600,7 +601,9 @@ fn build_partial_content<M: SupportMachine>(machine: &mut M) -> Result<Option<Pa
                 PartialSyscallContent::IoData { data_addr, input_length }
             }
             SyscallCode::LoadCellDataAsCode => {
-                panic!("Load cell data as code syscall is not supported!");
+                let data_addr = machine.registers()[A0].to_u64();
+                let input_length = machine.registers()[A1].to_u64();
+                PartialSyscallContent::IoDataAsCode { data_addr, input_length }
             }
             SyscallCode::VmVersion => PartialSyscallContent::ReturnWithCode,
             SyscallCode::CurrentCycles => PartialSyscallContent::ReturnWithCode,
@@ -660,6 +663,19 @@ fn apply_partial_content<M: SupportMachine>(
                 value: Some(traces::syscall::Value::IoData(traces::IoData {
                     available_data: data.as_ref().to_vec(),
                     additional_length: output_length - data.len() as u64,
+                })),
+            }
+        }
+        PartialSyscallContent::IoDataAsCode { data_addr, input_length } => {
+            let return_code = machine.registers()[A0].to_i64();
+            if return_code != 0 {
+                return return_syscall(return_code);
+            }
+            let data = machine.memory_mut().load_bytes(*data_addr, *input_length)?;
+            traces::Syscall {
+                value: Some(traces::syscall::Value::IoData(traces::IoData {
+                    available_data: data.as_ref().to_vec(),
+                    additional_length: 0,
                 })),
             }
         }
