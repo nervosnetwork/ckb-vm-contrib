@@ -384,9 +384,6 @@ impl SyscallImpls for ProtobufImpls {
     }
 }
 
-// TODO: it remains a question if this should be it's own type, or we should
-// merge it with ProtobufImpls. Merging them is easier at times, but there are
-// cases where we don't really need a machine type(e.g., fuzzing).
 pub struct ProtobufVmRunnerImpls<M> {
     inner: ProtobufImpls,
     _marker: PhantomData<M>,
