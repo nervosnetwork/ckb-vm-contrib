@@ -1018,6 +1018,94 @@ enum PartialLocator {
     Spawn(BinaryLocator),
 }
 
+#[derive(Default, Clone)]
+pub struct VmCreateCollector {
+    pending: Arc<Mutex<Option<VmId>>>,
+    data: Arc<Mutex<HashMap<CollectorKey, Vec<VmId>>>>,
+    generation_tracker: GenerationTracker,
+}
+
+impl Collector for VmCreateCollector {
+    type Trace = Vec<VmId>;
+
+    fn syscall_generator<DL, M>(
+        vm_id: &VmId,
+        sg_data: &SgData<DL>,
+        vm_context: &VmContext<DL>,
+        data: &Self,
+    ) -> Vec<Box<(dyn Syscalls<M>)>>
+    where
+        DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+        M: SupportMachine + 'static,
+    {
+        // Generation tracker only tracks, never processes syscalls. So
+        // it's safe to concatenate both vectors.
+        let mut syscalls = GenerationTracker::syscall_generator(vm_id, sg_data, vm_context, &data.generation_tracker);
+        for syscall in generate_ckb_syscalls(vm_id, sg_data, vm_context, &debug_printer()) {
+            syscalls.push(syscall);
+        }
+        vec![Box::new(VmCreateCollectorVMSyscalls { vm_id: *vm_id, data: data.clone(), syscalls })]
+    }
+
+    fn postprocess<DL, V, M>(&self, scheduler: &mut Scheduler<DL, V, M>) -> Result<(), Error>
+    where
+        DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone,
+        V: Clone,
+        M: DefaultMachineRunner,
+    {
+        self.generation_tracker.postprocess(scheduler)?;
+
+        if let Some(vm_id) = self.pending.lock().unwrap().take() {
+            assert_eq!(scheduler.state(&vm_id), Some(VmState::Runnable));
+            let key = self.generation_tracker.key(vm_id);
+            let child_id = scheduler.peek(
+                &vm_id,
+                |machine| {
+                    let mut machine = ReadonlyMachine::new(machine.inner_mut());
+                    extract_spawned_process_id(&mut machine)
+                },
+                |snapshot, sg_data| {
+                    let mut machine =
+                        ReadonlySnapshotMachine::<_, _, <<M as DefaultMachineRunner>::Inner as CoreMachine>::REG>::new(
+                            snapshot, sg_data,
+                        );
+                    extract_spawned_process_id(&mut machine)
+                },
+            )?;
+            self.data.lock().unwrap().entry(key).or_default().push(child_id);
+        }
+        Ok(())
+    }
+
+    fn seal(self) -> HashMap<CollectorKey, Self::Trace> {
+        self.data.lock().expect("lock").clone()
+    }
+}
+
+struct VmCreateCollectorVMSyscalls<M> {
+    vm_id: VmId,
+    data: VmCreateCollector,
+    syscalls: Vec<Box<(dyn Syscalls<M>)>>,
+}
+
+impl<M: SupportMachine> Syscalls<M> for VmCreateCollectorVMSyscalls<M> {
+    fn initialize(&mut self, machine: &mut M) -> Result<(), Error> {
+        for syscall in &mut self.syscalls {
+            syscall.initialize(machine)?;
+        }
+        Ok(())
+    }
+
+    fn ecall(&mut self, machine: &mut M) -> Result<bool, Error> {
+        if let Ok(code) = SyscallCode::try_from(machine.registers()[A7].to_u64()) {
+            if code == SyscallCode::Spawn {
+                let _ = self.data.pending.lock().unwrap().insert(self.vm_id);
+            }
+        }
+        delegate_to_syscalls(machine, &mut self.syscalls)
+    }
+}
+
 fn build_partial_locator<M: SupportMachine>(machine: &mut M) -> Option<PartialLocator> {
     let regs = machine.registers();
     let index = regs[A0].to_u64();
