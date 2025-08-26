@@ -1093,6 +1093,8 @@ impl<M: SupportMachine> Syscalls<M> for VmCreateCollectorVMSyscalls<M> {
         for syscall in &mut self.syscalls {
             syscall.initialize(machine)?;
         }
+        let key = self.data.generation_tracker.key(self.vm_id);
+        self.data.data.lock().unwrap().insert(key, vec![]);
         Ok(())
     }
 
