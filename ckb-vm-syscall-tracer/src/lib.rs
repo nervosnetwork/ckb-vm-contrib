@@ -1018,15 +1018,20 @@ enum PartialLocator {
     Spawn(BinaryLocator),
 }
 
+enum PartialVmCreate {
+    Exec(CollectorKey),
+    Spawn(CollectorKey),
+}
+
 #[derive(Default, Clone)]
 pub struct VmCreateCollector {
-    pending: Arc<Mutex<Option<VmId>>>,
-    data: Arc<Mutex<HashMap<CollectorKey, Vec<VmId>>>>,
+    pending: Arc<Mutex<Option<PartialVmCreate>>>,
+    data: Arc<Mutex<HashMap<CollectorKey, Vec<CollectorKey>>>>,
     generation_tracker: GenerationTracker,
 }
 
 impl Collector for VmCreateCollector {
-    type Trace = Vec<VmId>;
+    type Trace = Vec<CollectorKey>;
 
     fn syscall_generator<DL, M>(
         vm_id: &VmId,
@@ -1047,6 +1052,22 @@ impl Collector for VmCreateCollector {
         vec![Box::new(VmCreateCollectorVMSyscalls { vm_id: *vm_id, data: data.clone(), syscalls })]
     }
 
+    fn preprocess<DL, V, M>(
+        &self,
+        _verifier: &TransactionScriptsVerifier<DL, V, M>,
+        _script_group: &ScriptGroup,
+        _scheduler: &mut Scheduler<DL, V, M>,
+    ) -> Result<(), Error>
+    where
+        DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone,
+        V: Clone,
+        M: DefaultMachineRunner,
+    {
+        let key = self.generation_tracker.key(ROOT_VM_ID);
+        self.data.lock().unwrap().insert(key, vec![]);
+        Ok(())
+    }
+
     fn postprocess<DL, V, M>(&self, scheduler: &mut Scheduler<DL, V, M>) -> Result<(), Error>
     where
         DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone,
@@ -1055,24 +1076,35 @@ impl Collector for VmCreateCollector {
     {
         self.generation_tracker.postprocess(scheduler)?;
 
-        if let Some(vm_id) = self.pending.lock().unwrap().take() {
-            assert_eq!(scheduler.state(&vm_id), Some(VmState::Runnable));
-            let key = self.generation_tracker.key(vm_id);
-            let child_id = scheduler.peek(
-                &vm_id,
-                |machine| {
-                    let mut machine = ReadonlyMachine::new(machine.inner_mut());
-                    extract_spawned_process_id(&mut machine)
-                },
-                |snapshot, sg_data| {
-                    let mut machine =
-                        ReadonlySnapshotMachine::<_, _, <<M as DefaultMachineRunner>::Inner as CoreMachine>::REG>::new(
-                            snapshot, sg_data,
-                        );
-                    extract_spawned_process_id(&mut machine)
-                },
-            )?;
-            self.data.lock().unwrap().entry(key).or_default().push(child_id);
+        if let Some(partial_vm_create) = self.pending.lock().unwrap().take() {
+            match partial_vm_create {
+                PartialVmCreate::Exec(key) => {
+                    let child_key = self.generation_tracker.key(key.vm_id);
+                    self.data.lock().unwrap().entry(key).or_default().push(child_key.clone());
+                    self.data.lock().unwrap().insert(child_key, vec![]);
+                }
+                PartialVmCreate::Spawn(key) => {
+                    assert_eq!(scheduler.state(&key.vm_id), Some(VmState::Runnable));
+                    let child_id = scheduler.peek(
+                        &key.vm_id,
+                        |machine| {
+                            let mut machine = ReadonlyMachine::new(machine.inner_mut());
+                            extract_spawned_process_id(&mut machine)
+                        },
+                        |snapshot, sg_data| {
+                            let mut machine = ReadonlySnapshotMachine::<
+                                _,
+                                _,
+                                <<M as DefaultMachineRunner>::Inner as CoreMachine>::REG,
+                            >::new(snapshot, sg_data);
+                            extract_spawned_process_id(&mut machine)
+                        },
+                    )?;
+                    let child_key = self.generation_tracker.key(child_id);
+                    self.data.lock().unwrap().entry(key).or_default().push(child_key.clone());
+                    self.data.lock().unwrap().insert(child_key, vec![]);
+                }
+            }
         }
         Ok(())
     }
@@ -1093,15 +1125,20 @@ impl<M: SupportMachine> Syscalls<M> for VmCreateCollectorVMSyscalls<M> {
         for syscall in &mut self.syscalls {
             syscall.initialize(machine)?;
         }
-        let key = self.data.generation_tracker.key(self.vm_id);
-        self.data.data.lock().unwrap().insert(key, vec![]);
         Ok(())
     }
 
     fn ecall(&mut self, machine: &mut M) -> Result<bool, Error> {
         if let Ok(code) = SyscallCode::try_from(machine.registers()[A7].to_u64()) {
-            if code == SyscallCode::Spawn {
-                let _ = self.data.pending.lock().unwrap().insert(self.vm_id);
+            let key = self.data.generation_tracker.key(self.vm_id);
+            match code {
+                SyscallCode::Exec => {
+                    let _ = self.data.pending.lock().unwrap().insert(PartialVmCreate::Exec(key));
+                }
+                SyscallCode::Spawn => {
+                    let _ = self.data.pending.lock().unwrap().insert(PartialVmCreate::Spawn(key));
+                }
+                _ => {}
             }
         }
         delegate_to_syscalls(machine, &mut self.syscalls)
