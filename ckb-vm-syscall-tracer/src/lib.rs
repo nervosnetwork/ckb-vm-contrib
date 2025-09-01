@@ -653,8 +653,8 @@ fn apply_partial_content<M: SupportMachine>(
             if return_code != 0 {
                 return return_syscall(return_code);
             }
-            let length_addr = machine.registers()[A1].to_u64();
-            let output_length = machine.memory_mut().load64(&M::REG::from_u64(length_addr))?.to_u64();
+            let length_addr = machine.registers()[A1].clone();
+            let output_length = machine.memory_mut().load64(&length_addr)?.to_u64();
 
             let actual_data_length = std::cmp::min(*input_length, output_length);
             let data = machine.memory_mut().load_bytes(*data_addr, actual_data_length)?;
@@ -1232,6 +1232,18 @@ macro_rules! define_combine_collector {
 define_combine_collector!(CombineCollector2, CombineCollector2Trace, c1: C, c2: D);
 define_combine_collector!(CombineCollector3, CombineCollector3Trace, c1: C, c2: D, c3: E);
 define_combine_collector!(CombineCollector4, CombineCollector4Trace, c1: C, c2: D, c3: E, c4: F);
+define_combine_collector!(CombineCollector5, CombineCollector5Trace, c1: C, c2: D, c3: E, c4: F, c5: G);
+define_combine_collector!(CombineCollector6, CombineCollector6Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H);
+define_combine_collector!(CombineCollector7, CombineCollector7Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I);
+define_combine_collector!(CombineCollector8, CombineCollector8Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J);
+define_combine_collector!(CombineCollector9, CombineCollector9Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K);
+define_combine_collector!(CombineCollector10, CombineCollector10Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L);
+define_combine_collector!(CombineCollector11, CombineCollector11Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N);
+define_combine_collector!(CombineCollector12, CombineCollector12Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O);
+define_combine_collector!(CombineCollector13, CombineCollector13Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O, c13: P);
+define_combine_collector!(CombineCollector14, CombineCollector14Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O, c13: P, c14: Q);
+define_combine_collector!(CombineCollector15, CombineCollector15Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O, c13: P, c14: Q, c15: R);
+define_combine_collector!(CombineCollector16, CombineCollector16Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O, c13: P, c14: Q, c15: R, c16: S);
 
 fn build_partial_locator<M: SupportMachine>(machine: &mut M) -> Option<PartialLocator> {
     let regs = machine.registers();
