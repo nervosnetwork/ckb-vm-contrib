@@ -653,8 +653,8 @@ fn apply_partial_content<M: SupportMachine>(
             if return_code != 0 {
                 return return_syscall(return_code);
             }
-            let length_addr = machine.registers()[A1].to_u64();
-            let output_length = machine.memory_mut().load64(&M::REG::from_u64(length_addr))?.to_u64();
+            let length_addr = machine.registers()[A1].clone();
+            let output_length = machine.memory_mut().load64(&length_addr)?.to_u64();
 
             let actual_data_length = std::cmp::min(*input_length, output_length);
             let data = machine.memory_mut().load_bytes(*data_addr, actual_data_length)?;
@@ -1017,6 +1017,233 @@ enum PartialLocator {
     Exec(BinaryLocator),
     Spawn(BinaryLocator),
 }
+
+enum PartialVmCreate {
+    Exec(CollectorKey),
+    Spawn(CollectorKey),
+}
+
+#[derive(Default, Clone)]
+pub struct VmCreateCollector {
+    pending: Arc<Mutex<Option<PartialVmCreate>>>,
+    data: Arc<Mutex<HashMap<CollectorKey, Vec<CollectorKey>>>>,
+    generation_tracker: GenerationTracker,
+}
+
+impl Collector for VmCreateCollector {
+    type Trace = Vec<CollectorKey>;
+
+    fn syscall_generator<DL, M>(
+        vm_id: &VmId,
+        sg_data: &SgData<DL>,
+        vm_context: &VmContext<DL>,
+        data: &Self,
+    ) -> Vec<Box<(dyn Syscalls<M>)>>
+    where
+        DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+        M: SupportMachine + 'static,
+    {
+        // Generation tracker only tracks, never processes syscalls. So
+        // it's safe to concatenate both vectors.
+        let mut syscalls = GenerationTracker::syscall_generator(vm_id, sg_data, vm_context, &data.generation_tracker);
+        for syscall in generate_ckb_syscalls(vm_id, sg_data, vm_context, &debug_printer()) {
+            syscalls.push(syscall);
+        }
+        vec![Box::new(VmCreateCollectorVMSyscalls { vm_id: *vm_id, data: data.clone(), syscalls })]
+    }
+
+    fn preprocess<DL, V, M>(
+        &self,
+        _verifier: &TransactionScriptsVerifier<DL, V, M>,
+        _script_group: &ScriptGroup,
+        _scheduler: &mut Scheduler<DL, V, M>,
+    ) -> Result<(), Error>
+    where
+        DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone,
+        V: Clone,
+        M: DefaultMachineRunner,
+    {
+        let key = self.generation_tracker.key(ROOT_VM_ID);
+        self.data.lock().unwrap().insert(key, vec![]);
+        Ok(())
+    }
+
+    fn postprocess<DL, V, M>(&self, scheduler: &mut Scheduler<DL, V, M>) -> Result<(), Error>
+    where
+        DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone,
+        V: Clone,
+        M: DefaultMachineRunner,
+    {
+        self.generation_tracker.postprocess(scheduler)?;
+
+        if let Some(partial_vm_create) = self.pending.lock().unwrap().take() {
+            match partial_vm_create {
+                PartialVmCreate::Exec(key) => {
+                    let child_key = self.generation_tracker.key(key.vm_id);
+                    self.data.lock().unwrap().entry(key).or_default().push(child_key.clone());
+                    self.data.lock().unwrap().insert(child_key, vec![]);
+                }
+                PartialVmCreate::Spawn(key) => {
+                    assert_eq!(scheduler.state(&key.vm_id), Some(VmState::Runnable));
+                    let child_id = scheduler.peek(
+                        &key.vm_id,
+                        |machine| {
+                            let mut machine = ReadonlyMachine::new(machine.inner_mut());
+                            extract_spawned_process_id(&mut machine)
+                        },
+                        |snapshot, sg_data| {
+                            let mut machine = ReadonlySnapshotMachine::<
+                                _,
+                                _,
+                                <<M as DefaultMachineRunner>::Inner as CoreMachine>::REG,
+                            >::new(snapshot, sg_data);
+                            extract_spawned_process_id(&mut machine)
+                        },
+                    )?;
+                    let child_key = self.generation_tracker.key(child_id);
+                    self.data.lock().unwrap().entry(key).or_default().push(child_key.clone());
+                    self.data.lock().unwrap().insert(child_key, vec![]);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn seal(self) -> HashMap<CollectorKey, Self::Trace> {
+        self.data.lock().expect("lock").clone()
+    }
+}
+
+struct VmCreateCollectorVMSyscalls<M> {
+    vm_id: VmId,
+    data: VmCreateCollector,
+    syscalls: Vec<Box<(dyn Syscalls<M>)>>,
+}
+
+impl<M: SupportMachine> Syscalls<M> for VmCreateCollectorVMSyscalls<M> {
+    fn initialize(&mut self, machine: &mut M) -> Result<(), Error> {
+        for syscall in &mut self.syscalls {
+            syscall.initialize(machine)?;
+        }
+        Ok(())
+    }
+
+    fn ecall(&mut self, machine: &mut M) -> Result<bool, Error> {
+        if let Ok(code) = SyscallCode::try_from(machine.registers()[A7].to_u64()) {
+            let key = self.data.generation_tracker.key(self.vm_id);
+            match code {
+                SyscallCode::Exec => {
+                    let _ = self.data.pending.lock().unwrap().insert(PartialVmCreate::Exec(key));
+                }
+                SyscallCode::Spawn => {
+                    let _ = self.data.pending.lock().unwrap().insert(PartialVmCreate::Spawn(key));
+                }
+                _ => {}
+            }
+        }
+        delegate_to_syscalls(machine, &mut self.syscalls)
+    }
+}
+
+macro_rules! define_combine_collector {
+    ($name:ident, $trace_name:ident, $($field:ident: $type:ident),*) => {
+        #[derive(Clone)]
+        pub struct $trace_name<$($type: Collector),*> {
+            $(pub $field: Option<$type::Trace>),*
+        }
+
+        impl<$($type: Collector),*> Default for $trace_name<$($type),*> {
+            fn default() -> Self {
+                Self { $($field: None),* }
+            }
+        }
+
+        #[derive(Default, Clone)]
+        pub struct $name<$($type: Collector),*> {
+            $(pub $field: $type),*
+        }
+
+        impl<$($type: Collector),*> $name<$($type),*> {
+            pub fn new($($field: $type),*) -> Self {
+                Self {
+                    $($field),*
+                }
+            }
+        }
+
+        impl<$($type: Collector),*> Collector for $name<$($type),*>
+        {
+            type Trace = $trace_name<$($type),*>;
+
+            fn syscall_generator<DL, M>(
+                vm_id: &VmId,
+                sg_data: &SgData<DL>,
+                vm_context: &VmContext<DL>,
+                data: &Self,
+            ) -> Vec<Box<(dyn Syscalls<M>)>>
+            where
+                DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
+                M: SupportMachine + 'static,
+            {
+                let mut r = vec![];
+                $(r.extend($type::syscall_generator(vm_id, sg_data, vm_context, &data.$field));)*
+                r
+            }
+
+            fn preprocess<DL, V, M>(
+                &self,
+                verifier: &TransactionScriptsVerifier<DL, V, M>,
+                script_group: &ScriptGroup,
+                scheduler: &mut Scheduler<DL, V, M>,
+            ) -> Result<(), Error>
+            where
+                DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone,
+                V: Clone,
+                M: DefaultMachineRunner,
+            {
+                $(self.$field.preprocess(verifier, script_group, scheduler)?;)*
+                Ok(())
+            }
+
+            fn postprocess<DL, V, M>(&self, scheduler: &mut Scheduler<DL, V, M>) -> Result<(), Error>
+            where
+                DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone,
+                V: Clone,
+                M: DefaultMachineRunner,
+            {
+                $(self.$field.postprocess(scheduler)?;)*
+                Ok(())
+            }
+
+            fn seal(self) -> HashMap<CollectorKey, Self::Trace> {
+                let mut r: HashMap<CollectorKey, Self::Trace> = HashMap::new();
+                $(
+                    for (k, v) in self.$field.seal() {
+                        let d = r.entry(k).or_insert_with($trace_name::default);
+                        d.$field = Some(v);
+                    }
+                )*
+                r
+            }
+        }
+    };
+}
+
+define_combine_collector!(CombineCollector2, CombineCollector2Trace, c1: C, c2: D);
+define_combine_collector!(CombineCollector3, CombineCollector3Trace, c1: C, c2: D, c3: E);
+define_combine_collector!(CombineCollector4, CombineCollector4Trace, c1: C, c2: D, c3: E, c4: F);
+define_combine_collector!(CombineCollector5, CombineCollector5Trace, c1: C, c2: D, c3: E, c4: F, c5: G);
+define_combine_collector!(CombineCollector6, CombineCollector6Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H);
+define_combine_collector!(CombineCollector7, CombineCollector7Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I);
+define_combine_collector!(CombineCollector8, CombineCollector8Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J);
+define_combine_collector!(CombineCollector9, CombineCollector9Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K);
+define_combine_collector!(CombineCollector10, CombineCollector10Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L);
+define_combine_collector!(CombineCollector11, CombineCollector11Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N);
+define_combine_collector!(CombineCollector12, CombineCollector12Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O);
+define_combine_collector!(CombineCollector13, CombineCollector13Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O, c13: P);
+define_combine_collector!(CombineCollector14, CombineCollector14Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O, c13: P, c14: Q);
+define_combine_collector!(CombineCollector15, CombineCollector15Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O, c13: P, c14: Q, c15: R);
+define_combine_collector!(CombineCollector16, CombineCollector16Trace, c1: C, c2: D, c3: E, c4: F, c5: G, c6: H, c7: I, c8: J, c9: K, c10: L, c11: N, c12: O, c13: P, c14: Q, c15: R, c16: S);
 
 fn build_partial_locator<M: SupportMachine>(machine: &mut M) -> Option<PartialLocator> {
     let regs = machine.registers();
