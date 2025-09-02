@@ -7,7 +7,7 @@ edition.workspace = true
 authors.workspace = true
 
 [dependencies]
-ckb-vm-fuzzing-utils = { path = "../ckb-vm-fuzzing-utils" }
+ckb-vm-fuzzing-utils.workspace = true
 ckb-vm.workspace = true
 ckb-std.workspace = true
 
