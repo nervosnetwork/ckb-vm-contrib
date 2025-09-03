@@ -568,7 +568,7 @@ impl<M: SupportMachine> Syscalls<M> for SyscallBasedCollectorVMSyscalls<M> {
 enum PartialSyscallContent {
     ReturnWithCode,
     IoData { data_addr: u64, input_length: u64 },
-    IoDataAsCode { data_addr: u64, input_length: u64 },
+    IoDataAsCode { data_addr: u64, input_length: u64 }, // Actual binary code.
     Exec { args: Vec<Vec<u8>> },
     Spawn { args: Vec<Vec<u8>> },
     Wait,
@@ -602,7 +602,7 @@ fn build_partial_content<M: SupportMachine>(machine: &mut M) -> Result<Option<Pa
             }
             SyscallCode::LoadCellDataAsCode => {
                 let data_addr = machine.registers()[A0].to_u64();
-                let input_length = machine.registers()[A1].to_u64();
+                let input_length = machine.registers()[A3].to_u64();
                 PartialSyscallContent::IoDataAsCode { data_addr, input_length }
             }
             SyscallCode::VmVersion => PartialSyscallContent::ReturnWithCode,
