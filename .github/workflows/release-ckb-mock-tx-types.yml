@@ -8,11 +8,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write     # Required for OIDC token exchange
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-    - name: Publish
+    - uses: rust-lang/crates-io-auth-action@v1
+      id: auth
+    - run: |
+        cd ckb-mock-tx-types && cargo publish
       env:
-        CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      run: cd ckb-mock-tx-types && cargo publish
+        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
