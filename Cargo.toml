@@ -12,7 +12,7 @@ members = [
 exclude = ["deps/ckb-vm"]
 
 [workspace.package]
-version = "0.202.0"
+version = "0.202.1"
 license = "MIT"
 edition = "2024"
 authors = ["Nervos Core Dev <dev@nervos.org>"]
@@ -28,12 +28,12 @@ ckb-types = "=0.202.0"
 ckb-vm = { version = "=0.24.14", features=["pprof"] }
 
 # Crates defined in current workspace
-ckb-mock-tx-types = { path = "ckb-mock-tx-types", version = "0.202.0" }
-ckb-vm-fuzzing-utils = { path = "ckb-vm-fuzzing-utils", version = "0.202.0" }
-ckb-vm-syscall-tracer = { path = "ckb-vm-syscall-tracer", version = "0.202.0" }
-ckb-x64-simulator = { path = "ckb-x64-simulator", version = "0.202.0" }
-protobuf-ckb-syscalls = { path = "protobuf-ckb-syscalls", version = "0.202.0" }
-spike-sys = { path = "spike-sys", version = "0.202.0" }
+ckb-mock-tx-types = { path = "ckb-mock-tx-types", version = "0.202.1" }
+ckb-script-size-analyzer = { path = "ckb-script-size-analyzer", version = "0.202.1" }
+ckb-vm-fuzzing-utils = { path = "ckb-vm-fuzzing-utils", version = "0.202.1" }
+ckb-vm-syscall-tracer = { path = "ckb-vm-syscall-tracer", version = "0.202.1" }
+ckb-x64-simulator = { path = "ckb-x64-simulator", version = "0.202.1" }
+protobuf-ckb-syscalls = { path = "protobuf-ckb-syscalls", version = "0.202.1" }
 
 # Other common crates
 clap = { version = "4.5.40", features = ["cargo", "derive"] }
