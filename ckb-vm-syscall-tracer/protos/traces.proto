@@ -60,3 +60,12 @@ message Root {
     Syscalls syscalls = 3;
   }
 }
+
+message VmCreation {
+  uint64 vm_id = 1;
+  uint64 generation_id = 2;
+}
+
+message VmCreations {
+  repeated VmCreation vm_creations = 1;
+}

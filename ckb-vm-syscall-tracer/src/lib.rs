@@ -53,6 +53,9 @@ pub enum CollectorKind {
 
     /// Tx based collector, certain data are collected from the tx as a whole
     TxParts,
+
+    /// VM creation collector, sub VM creation events are collected.
+    VmCreate,
 }
 
 impl CollectorKind {
@@ -60,6 +63,7 @@ impl CollectorKind {
         match self {
             CollectorKind::Syscall => "generated.traces.Syscalls",
             CollectorKind::TxParts => "generated.traces.Parts",
+            CollectorKind::VmCreate => "generated.traces.VmCreations",
         }
     }
 }
@@ -88,6 +92,20 @@ impl TryFrom<&[u8]> for traces::Syscalls {
 
 impl From<traces::Syscalls> for Vec<u8> {
     fn from(value: traces::Syscalls) -> Self {
+        value.encode_to_vec()
+    }
+}
+
+impl TryFrom<&[u8]> for traces::VmCreations {
+    type Error = Error;
+
+    fn try_from(v: &[u8]) -> Result<Self, Self::Error> {
+        Self::decode(v).map_err(|e| Error::External(format!("prost decoding error: {}", e)))
+    }
+}
+
+impl From<traces::VmCreations> for Vec<u8> {
+    fn from(value: traces::VmCreations) -> Self {
         value.encode_to_vec()
     }
 }
@@ -1031,7 +1049,7 @@ pub struct VmCreateCollector {
 }
 
 impl Collector for VmCreateCollector {
-    type Trace = Vec<CollectorKey>;
+    type Trace = traces::VmCreations;
 
     fn syscall_generator<DL, M>(
         vm_id: &VmId,
@@ -1110,7 +1128,22 @@ impl Collector for VmCreateCollector {
     }
 
     fn seal(self) -> HashMap<CollectorKey, Self::Trace> {
-        self.data.lock().expect("lock").clone()
+        self.data
+            .lock()
+            .expect("lock")
+            .iter()
+            .map(|(k, v)| {
+                (
+                    k.clone(),
+                    traces::VmCreations {
+                        vm_creations: v
+                            .iter()
+                            .map(|ck| traces::VmCreation { vm_id: ck.vm_id, generation_id: ck.generation_id })
+                            .collect(),
+                    },
+                )
+            })
+            .collect()
     }
 }
 

@@ -1,5 +1,7 @@
 use ckb_vm::Error;
-use ckb_vm_syscall_tracer::{Collector, CollectorKind, SyscallBasedCollector, TxPartsBasedCollector};
+use ckb_vm_syscall_tracer::{
+    Collector, CollectorKind, SyscallBasedCollector, TxPartsBasedCollector, VmCreateCollector,
+};
 use clap::Parser;
 
 #[derive(Debug, Parser)]
@@ -18,6 +20,7 @@ fn main() -> Result<(), Error> {
     match cli.collector {
         CollectorKind::Syscall => run::<SyscallBasedCollector>(&cli),
         CollectorKind::TxParts => run::<TxPartsBasedCollector>(&cli),
+        CollectorKind::VmCreate => run::<VmCreateCollector>(&cli),
     }
 }
 
