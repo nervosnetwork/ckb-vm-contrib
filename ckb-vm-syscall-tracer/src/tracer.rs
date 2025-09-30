@@ -3,6 +3,7 @@ use ckb_script::ScriptGroupType;
 use ckb_types::{packed::Byte32, prelude::*};
 use ckb_vm_syscall_tracer::{
     BinaryLocatorCollector, Collector, CollectorKind, CollectorResult, SyscallBasedCollector, TxPartsBasedCollector,
+    VmCreateCollector,
 };
 use clap::{Parser, ValueEnum};
 use std::collections::HashMap;
@@ -74,6 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match cli.collector {
         CollectorKind::Syscall => run::<SyscallBasedCollector>(&cli),
         CollectorKind::TxParts => run::<TxPartsBasedCollector>(&cli),
+        CollectorKind::VmCreate => run::<VmCreateCollector>(&cli),
     }
 }
 
