@@ -1,13 +1,6 @@
 #!/bin/bash
 set -ex
 
-if [ "x$RISCV" = "x" ]
-then
-  echo "Please set the RISCV environment variable to your installed path."
-  exit 1
-fi
-PATH=$PATH:$RISCV/bin
-
 # Inspired from https://stackoverflow.com/a/246128
 TOP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd $TOP
@@ -81,7 +74,7 @@ fi
 cd "$TOP/riscv-tests"
 autoconf
 ./configure
-make isa
+make isa-clang
 
 if [ "$RUNTESTS" -eq "1" ]
 then

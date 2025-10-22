@@ -2,10 +2,18 @@ TARGET_SIM ?= ckb-vm
 
 RUN_TARGET= $(TARGET_SIM) $< > $@
 
-RISCV_PREFIX   ?= riscv64-unknown-elf-
-RISCV_GCC      ?= $(RISCV_PREFIX)gcc
-RISCV_OBJDUMP  ?= $(RISCV_PREFIX)objdump
-RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -DXLEN=$(XLEN) $(RVTEST_DEFINES)
+# Build with gcc
+# RISCV_PREFIX   ?= riscv64-unknown-elf-
+# RISCV_GCC      ?= $(RISCV_PREFIX)gcc
+# RISCV_OBJDUMP  ?= $(RISCV_PREFIX)objdump
+# RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -DXLEN=$(XLEN) $(RVTEST_DEFINES)
+
+CLANG := $(shell ../../../../programs/scripts/find_clang)
+OBJDUMP := $(subst clang,llvm-objdump,$(CLANG))
+RISCV_GCC ?= $(CLANG) --target=riscv64-unknown-elf
+RISCV_OBJDUMP ?= $(OBJDUMP)
+RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -DXLEN=$(XLEN) $(RVTEST_DEFINES)
+
 
 COMPILE_TARGET=\
 	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) \
