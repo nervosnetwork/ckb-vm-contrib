@@ -381,7 +381,9 @@ where
             SyscallCode::Debug => {
                 let addr = machine.registers()[A0].clone();
                 let b = load_c_string_byte_by_byte(machine.memory_mut(), &addr)?;
-                let s = unsafe { CStr::from_ptr(b.as_ptr() as *const _) };
+                let mut b = b.to_vec();
+                b.push(0);
+                let s = CStr::from_bytes_with_nul(&b).unwrap();
                 self.impls.debug(s);
             }
         }

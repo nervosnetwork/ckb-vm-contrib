@@ -402,6 +402,13 @@ impl<M> ProtobufVmRunnerImpls<M> {
     pub fn args(&self) -> &[Vec<u8>] {
         self.inner.args()
     }
+
+    pub fn set_debug_printer<F>(&mut self, f: F)
+    where
+        F: Fn(&str) + Send + Sync + 'static,
+    {
+        self.inner.debug_printer = Box::new(f);
+    }
 }
 
 impl<M> SyscallImpls for ProtobufVmRunnerImpls<M> {
