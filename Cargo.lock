@@ -294,7 +294,7 @@ dependencies = [
  "ckb-crypto",
  "ckb-dao-utils",
  "ckb-error",
- "ckb-hash 1.0.0",
+ "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-logger",
  "ckb-pow",
@@ -387,17 +387,6 @@ dependencies = [
 
 [[package]]
 name = "ckb-gen-types"
-version = "0.202.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "255da9cda52578622b7b8a437eb22942bfdbe90d7896f86a002fa8e4cc1804c8"
-dependencies = [
- "cfg-if",
- "ckb-hash 0.202.0",
- "molecule",
-]
-
-[[package]]
-name = "ckb-gen-types"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e57ad8b6edc20d1614780e9034475e1edac24f3ef5edc197cbd6f0bc9b20eea6"
@@ -405,21 +394,12 @@ dependencies = [
  "cfg-if",
  "ckb-error",
  "ckb-fixed-hash",
- "ckb-hash 1.0.0",
+ "ckb-hash",
  "ckb-occupied-capacity",
  "molecule",
  "numext-fixed-uint",
  "seq-macro",
  "strum",
-]
-
-[[package]]
-name = "ckb-hash"
-version = "0.202.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a74fb43c0f092a5ea388d31e4579cada2cc14e45dd5818b996f348613efe202"
-dependencies = [
- "blake2b-ref",
 ]
 
 [[package]]
@@ -511,7 +491,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d34cfa54433ce70a9965bd377a692be20e0579e2e3366fe539c1b1a2f024faf"
 dependencies = [
  "byteorder",
- "ckb-hash 1.0.0",
+ "ckb-hash",
  "ckb-types",
  "eaglesong",
  "log",
@@ -552,7 +532,7 @@ dependencies = [
  "byteorder",
  "ckb-chain-spec",
  "ckb-error",
- "ckb-hash 1.0.0",
+ "ckb-hash",
  "ckb-logger",
  "ckb-traits",
  "ckb-types",
@@ -564,7 +544,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-script-size-analyzer"
-version = "0.203.0"
+version = "1.0.0"
 dependencies = [
  "clap",
  "object",
@@ -573,13 +553,13 @@ dependencies = [
 
 [[package]]
 name = "ckb-std"
-version = "0.18.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "161ac10a3d0c70ff689a0cf739cf5d91329eb4da085001e887aa636a2e729d84"
+checksum = "8efe226c304a42f78ecdbea5924f7bd4654cbea69533896d6a4ab3d1916d1e03"
 dependencies = [
  "buddy-alloc",
  "cc",
- "ckb-gen-types 0.202.0",
+ "ckb-gen-types",
  "gcd",
  "int-enum",
 ]
@@ -617,8 +597,8 @@ dependencies = [
  "ckb-constant",
  "ckb-error",
  "ckb-fixed-hash",
- "ckb-gen-types 1.0.0",
- "ckb-hash 1.0.0",
+ "ckb-gen-types",
+ "ckb-hash",
  "ckb-merkle-mountain-range",
  "ckb-occupied-capacity",
  "ckb-rational",
@@ -682,7 +662,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-vm-fuzzing-utils"
-version = "0.203.0"
+version = "1.0.0"
 dependencies = [
  "ckb-std",
  "ckb-vm 0.24.14",
@@ -692,7 +672,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-vm-syscall-tracer"
-version = "0.203.0"
+version = "1.0.0"
 dependencies = [
  "ckb-chain-spec",
  "ckb-mock-tx-types",
@@ -715,7 +695,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-vm-test-suite"
-version = "0.203.0"
+version = "1.0.0"
 dependencies = [
  "ckb-vm 0.24.0",
  "criterion",
@@ -724,7 +704,7 @@ dependencies = [
 
 [[package]]
 name = "ckb-x64-simulator"
-version = "0.203.0"
+version = "1.0.0"
 dependencies = [
  "cc",
  "ckb-mock-tx-types",
@@ -1884,7 +1864,7 @@ dependencies = [
 
 [[package]]
 name = "protobuf-ckb-syscalls"
-version = "0.203.0"
+version = "1.0.0"
 dependencies = [
  "ckb-std",
  "ckb-vm 0.24.14",

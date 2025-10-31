@@ -5,8 +5,8 @@ extern crate alloc;
 
 use alloc::{ffi::CString, vec::Vec};
 use ckb_std::{
-    ckb_constants::Source,
-    syscalls::traits::{Error, IoResult, SyscallImpls},
+    ckb_constants::{Place, Source},
+    syscalls::traits::{Bounds, Error, IoResult, SyscallImpls},
 };
 use ckb_vm::{
     Error as VMError, Memory, Register, SupportMachine, Syscalls,
@@ -253,7 +253,13 @@ where
                 }
                 let argv_refs: Vec<_> = argv.iter().map(|arg| arg.as_c_str()).collect();
 
-                let result = self.impls.exec(index, source, place, bounds, &argv_refs);
+                let result = self.impls.exec(
+                    index,
+                    source,
+                    Place::try_from(place as u64).unwrap(),
+                    Bounds::from(bounds as u64),
+                    &argv_refs,
+                );
                 // In case of success, a new binary will be loaded
                 if result.is_err() {
                     self.set_return(result, machine);
@@ -296,7 +302,14 @@ where
                 }
 
                 // For now we assume synchronous operation
-                let result = self.impls.spawn(index, source, place, bounds, &argv_refs, &fds);
+                let result = self.impls.spawn(
+                    index,
+                    source,
+                    Place::try_from(place as u64).unwrap(),
+                    Bounds::from(bounds as u64),
+                    &argv_refs,
+                    &fds,
+                );
                 if let Ok(process_id) = result {
                     machine.memory_mut().store64(&process_id_addr, &M::REG::from_u64(process_id))?;
                 }
