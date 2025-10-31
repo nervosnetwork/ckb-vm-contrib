@@ -12,7 +12,7 @@ members = [
 exclude = ["deps/ckb-vm"]
 
 [workspace.package]
-version = "0.203.0"
+version = "1.0.0"
 license = "MIT"
 edition = "2024"
 authors = ["Nervos Core Dev <dev@nervos.org>"]
@@ -22,18 +22,18 @@ authors = ["Nervos Core Dev <dev@nervos.org>"]
 ckb-chain-spec = "1.0.0"
 ckb-jsonrpc-types = "1.0.0"
 ckb-script = "1.0.0"
-ckb-std = { version = "=0.18.0", features = ["stub-syscalls"] }
+ckb-std = { version = "=1.0.1", features = ["stub-syscalls"] }
 ckb-traits = "1.0.0"
 ckb-types = "1.0.0"
 ckb-vm = { version = "=0.24.14", features=["pprof"] }
 
 # Crates defined in current workspace
 ckb-mock-tx-types = { path = "ckb-mock-tx-types", version = "1.0.0" }
-ckb-script-size-analyzer = { path = "ckb-script-size-analyzer", version = "0.203.0" }
-ckb-vm-fuzzing-utils = { path = "ckb-vm-fuzzing-utils", version = "0.203.0" }
-ckb-vm-syscall-tracer = { path = "ckb-vm-syscall-tracer", version = "0.203.0" }
-ckb-x64-simulator = { path = "ckb-x64-simulator", version = "0.203.0" }
-protobuf-ckb-syscalls = { path = "protobuf-ckb-syscalls", version = "0.203.0" }
+ckb-script-size-analyzer = { path = "ckb-script-size-analyzer", version = "1.0.0" }
+ckb-vm-fuzzing-utils = { path = "ckb-vm-fuzzing-utils", version = "1.0.0" }
+ckb-vm-syscall-tracer = { path = "ckb-vm-syscall-tracer", version = "1.0.0" }
+ckb-x64-simulator = { path = "ckb-x64-simulator", version = "1.0.0" }
+protobuf-ckb-syscalls = { path = "protobuf-ckb-syscalls", version = "1.0.0" }
 
 # Other common crates
 clap = { version = "4.5.40", features = ["cargo", "derive"] }

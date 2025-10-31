@@ -19,8 +19,8 @@ pub mod generated {
 use crate::generated::traces;
 use alloc::{boxed::Box, collections::VecDeque, vec::Vec};
 use ckb_std::{
-    ckb_constants::{CellField, HeaderField, InputField, Source},
-    syscalls::traits::{Error, IoResult, SyscallImpls},
+    ckb_constants::{CellField, HeaderField, InputField, Place, Source},
+    syscalls::traits::{Bounds, Error, IoResult, SyscallImpls},
 };
 use ckb_vm::SupportMachine;
 use ckb_vm_fuzzing_utils::{CkbvmRunnerImpls, exit_with_panic, flatten_args};
@@ -263,8 +263,8 @@ impl SyscallImpls for ProtobufImpls {
         &self,
         _index: usize,
         _source: Source,
-        _place: usize,
-        _bounds: usize,
+        _place: Place,
+        _bounds: Bounds,
         _argv: &[&CStr],
     ) -> Result<(), Error> {
         match self.syscall() {
@@ -282,8 +282,8 @@ impl SyscallImpls for ProtobufImpls {
         &self,
         _index: usize,
         _source: Source,
-        _place: usize,
-        _bounds: usize,
+        _place: Place,
+        _bounds: Bounds,
         _argv: &[&CStr],
         _inherited_fds: &[u64],
     ) -> Result<u64, Error> {
@@ -509,7 +509,7 @@ impl<M> SyscallImpls for ProtobufVmRunnerImpls<M> {
         self.inner.current_cycles()
     }
 
-    fn exec(&self, index: usize, source: Source, place: usize, bounds: usize, argv: &[&CStr]) -> Result<(), Error> {
+    fn exec(&self, index: usize, source: Source, place: Place, bounds: Bounds, argv: &[&CStr]) -> Result<(), Error> {
         self.inner.exec(index, source, place, bounds, argv)
     }
 
@@ -517,8 +517,8 @@ impl<M> SyscallImpls for ProtobufVmRunnerImpls<M> {
         &self,
         index: usize,
         source: Source,
-        place: usize,
-        bounds: usize,
+        place: Place,
+        bounds: Bounds,
         argv: &[&CStr],
         inherited_fds: &[u64],
     ) -> Result<u64, Error> {
