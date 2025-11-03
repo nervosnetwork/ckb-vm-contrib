@@ -58,7 +58,6 @@ build:
 		done; \
 	else \
 		$(MAKE) -e -C contracts/$(CONTRACT) build; \
-		cargo build -p $(CONTRACT)-sim; \
 	fi;
 
 report:
