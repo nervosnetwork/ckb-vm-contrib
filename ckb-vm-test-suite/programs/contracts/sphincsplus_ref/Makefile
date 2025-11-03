@@ -69,7 +69,9 @@ ifneq (,$(findstring sha2,$(SPHINCSPLUS_PARAMS)))
 		$(SPHINCSPLUS_DIR)/thash_sha2_$(SPHINCSPLUS_THASH).c
 endif
 
-CFLAGS_CKBVM_BASE = --target=riscv64-unknown-elf -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
+CFLAGS_CKBVM_BASE = --target=riscv64-unknown-elf -march=rv64imc_zba_zbb_zbc_zbs \
+	$(CLANG_OPTIMIZER) \
+	-fdata-sections -ffunction-sections
 CFLAGS_CKBVM_SPHINCSPLUS = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-I sphincsplus/ref \
