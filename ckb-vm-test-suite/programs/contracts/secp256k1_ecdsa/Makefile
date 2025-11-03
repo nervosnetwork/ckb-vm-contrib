@@ -38,7 +38,9 @@ endif
 
 default: build test
 
-CFLAGS_CKBVM_BASE = --target=riscv64-unknown-elf -march=rv64imc_zba_zbb_zbc_zbs $(CLANG_OPTIMIZER) -fdata-sections -ffunction-sections
+CFLAGS_CKBVM_BASE = --target=riscv64-unknown-elf -march=rv64imc_zba_zbb_zbc_zbs \
+	$(CLANG_OPTIMIZER) \
+	-fdata-sections -ffunction-sections
 CFLAGS_CKBVM_SECP256K1 = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY
