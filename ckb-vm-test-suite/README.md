@@ -4,17 +4,17 @@ Test suite for CKB VM, kept in a separate project to avoid polluting the vm repo
 
 # How to run this
 
-First, make sure you have [RISCV GNU toolchain](https://github.com/riscv/riscv-gnu-toolchain) installed. The environment variable `RISCV` should point to the path where you install RISCV GNU toolchain. To test this, make sure the following command works:
+First, make sure you have clang-19 installed. To test this, make sure the following command works:
 
 ```bash
-$ ls $RISCV/bin/riscv64-unknown-elf-gcc
+$ clang-19 --version
 ```
 
 Now you can run the test suite with the following steps:
 
 ```bash
 $ make ckb-vm
-$ RISCV=/opt/riscv ./test.sh
+$ ./test.sh
 ```
 
 # Get Coverage Report By Kcov
@@ -22,7 +22,7 @@ $ RISCV=/opt/riscv ./test.sh
 First install kcov by <https://github.com/SimonKagstrom/kcov/blob/master/INSTALL.md>
 
 ```sh
-$ RISCV=/opt/riscv ./test.sh --coverage
+$ ./test.sh --coverage
 ```
 
 # Benchmark
