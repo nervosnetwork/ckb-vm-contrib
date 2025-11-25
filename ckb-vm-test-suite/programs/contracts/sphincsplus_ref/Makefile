@@ -69,14 +69,16 @@ ifneq (,$(findstring sha2,$(SPHINCSPLUS_PARAMS)))
 		$(SPHINCSPLUS_DIR)/thash_sha2_$(SPHINCSPLUS_THASH).c
 endif
 
-CFLAGS_CKBVM_BASE = --target=riscv64-unknown-elf -march=rv64imc_zba_zbb_zbc_zbs \
+CFLAGS_CKBVM_BASE = --target=riscv64-unknown-elf -march=rv64imc_zba_zbb_zbc_zbs_zicfiss1p0_zicfilp1p0 \
 	$(CLANG_OPTIMIZER) \
-	-fdata-sections -ffunction-sections
+	-fdata-sections -ffunction-sections \
+	-fuse-ld=lld \
+	-menable-experimental-extensions -fcf-protection=full -mcf-branch-label-scheme=func-sig
 CFLAGS_CKBVM_SPHINCSPLUS = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-I sphincsplus/ref \
 	-Lmusl/release/lib -Lcompiler-rt-builtins-riscv/build \
-	-lc -lgcc -lcompiler-rt \
+	-Wl,--whole-archive -lc -Wl,--no-whole-archive -lgcc -lcompiler-rt \
 	-DPARAMS=$(SPHINCSPLUS_PARAMS) \
 	-Wl,--gc-sections
 # Compared to clang-18 and clang-19, clang-20 changes the default arguments passed to ld.lld. So add this line.
@@ -99,6 +101,7 @@ build: compiler-rt-builtins-riscv musl sphincsplus
 		sphincsplus_ref_sign.c
 	./sphincsplus_ref_sign > sphincsplus_ref_data.h
 	$(CLANG) $(CFLAGS_CKBVM_SPHINCSPLUS) -o sphincsplus_ref_ckbvm sphincsplus_ref.c $(SPHINCSPLUS_SOURCES)
+	$(TOP)/scripts/add_note_section.sh sphincsplus_ref_ckbvm
 	$(CLANG) $(CFLAGS_NATIVE_SPHINCSPLUS) -o sphincsplus_ref_native sphincsplus_ref.c $(SPHINCSPLUS_SOURCES)
 	@set -eu; \
 	if [ "x$(BUILD_DIR)" != "x" ]; then \
@@ -118,7 +121,7 @@ compiler-rt-builtins-riscv:
 
 musl:
 	ln -s ../../../../deps/musl .
-	cd musl && ./ckb/build.sh
+	cd musl && CFI=func-sig ./ckb/build.sh
 
 sphincsplus:
 	ln -s ../../../../deps/sphincsplus .

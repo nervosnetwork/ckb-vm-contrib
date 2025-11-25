@@ -5,8 +5,7 @@ use ckb_vm::machine::trace::TraceMachine;
 use ckb_vm::machine::{CoreMachine, DefaultCoreMachine, DefaultMachine, DefaultMachineRunner, SupportMachine};
 use ckb_vm::memory::{sparse::SparseMemory, wxorx::WXorXMemory};
 use ckb_vm::snapshot2::{DataSource, Snapshot2, Snapshot2Context};
-use ckb_vm::{Bytes, ISA_MOP, Memory};
-use ckb_vm::{Error, ISA_B, ISA_IMC, RustDefaultMachineBuilder};
+use ckb_vm::{Bytes, Error, Memory, RustDefaultMachineBuilder};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
@@ -20,22 +19,18 @@ pub enum MachineTy {
 }
 
 impl MachineTy {
-    pub fn build(self, data_source: TestSource, version: u32) -> Machine {
+    pub fn build(self, data_source: TestSource, isa: u8, version: u32) -> Machine {
         match self {
             MachineTy::Asm => {
                 let context = Arc::new(Mutex::new(Snapshot2Context::new(data_source)));
-                let asm_core1 = <AsmCoreMachine as SupportMachine>::new(ISA_IMC | ISA_B | ISA_MOP, version, 0);
+                let asm_core1 = <AsmCoreMachine as SupportMachine>::new(isa, version, 0);
                 let core1 =
                     AsmDefaultMachineBuilder::new(asm_core1).instruction_cycle_func(Box::new(constant_cycles)).build();
                 Machine::Asm(AsmMachine::new(core1), context)
             }
             MachineTy::Interpreter => {
                 let context = Arc::new(Mutex::new(Snapshot2Context::new(data_source)));
-                let core_machine1 = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-                    ISA_IMC | ISA_B | ISA_MOP,
-                    version,
-                    0,
-                );
+                let core_machine1 = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(isa, version, 0);
                 Machine::Interpreter(
                     RustDefaultMachineBuilder::<DefaultCoreMachine<u64, WXorXMemory<SparseMemory<u64>>>>::new(
                         core_machine1,
@@ -47,11 +42,7 @@ impl MachineTy {
             }
             MachineTy::InterpreterWithTrace => {
                 let context = Arc::new(Mutex::new(Snapshot2Context::new(data_source)));
-                let core_machine1 = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(
-                    ISA_IMC | ISA_B | ISA_MOP,
-                    version,
-                    0,
-                );
+                let core_machine1 = DefaultCoreMachine::<u64, WXorXMemory<SparseMemory<u64>>>::new(isa, version, 0);
                 Machine::InterpreterWithTrace(
                     TraceMachine::new(
                         RustDefaultMachineBuilder::<DefaultCoreMachine<u64, WXorXMemory<SparseMemory<u64>>>>::new(

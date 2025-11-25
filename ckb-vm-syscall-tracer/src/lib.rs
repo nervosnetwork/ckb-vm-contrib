@@ -197,9 +197,10 @@ pub trait Collector: Clone + Default {
         let hardforks = hardfork::HardForks {
             ckb2021: hardfork::CKB2021::new_mirana().as_builder().rfc_0032(20).build().unwrap(),
             ckb2023: hardfork::CKB2023::new_mirana().as_builder().rfc_0049(30).build().unwrap(),
+            ckb2025: hardfork::CKB2025::new_mirana().as_builder().rfc_0099(40).build().unwrap(),
         };
         let consensus = Arc::new(ConsensusBuilder::default().hardfork_switch(hardforks).build());
-        let epoch = EpochNumberWithFraction::new(35, 0, 1);
+        let epoch = EpochNumberWithFraction::new(45, 0, 1);
         let header_view = HeaderView::new_advanced_builder().epoch(epoch.pack()).build();
         let tx_env = Arc::new(TxVerifyEnv::new_commit(&header_view));
         Ok(TransactionScriptsVerifier::new_with_generator(

@@ -18,11 +18,7 @@ impl<'a, M> ReadonlyMachine<'a, M> {
 impl<M: SupportMachine> Memory for ReadonlyMachine<'_, M> {
     type REG = M::REG;
 
-    fn new() -> Self {
-        unreachable!()
-    }
-
-    fn new_with_memory(_memory_size: usize) -> Self {
+    fn new(_: usize) -> Self {
         unreachable!()
     }
 
@@ -153,6 +149,46 @@ impl<M: SupportMachine> CoreMachine for ReadonlyMachine<'_, M> {
     fn isa(&self) -> u8 {
         unreachable!()
     }
+
+    fn cfi(&self) -> ckb_vm::elf::CFI {
+        self.0.cfi()
+    }
+
+    fn set_cfi(&mut self, _: ckb_vm::elf::CFI) {
+        unreachable!()
+    }
+
+    fn elp(&self) -> u32 {
+        self.0.elp()
+    }
+
+    fn set_elp(&mut self, _: u32) {
+        unreachable!()
+    }
+
+    fn ssp(&self) -> &Self::REG {
+        self.0.ssp()
+    }
+
+    fn set_ssp(&mut self, _: &Self::REG) {
+        unreachable!()
+    }
+
+    fn ss(&self) -> &[u8] {
+        self.0.ss()
+    }
+
+    fn ss_mut(&mut self) -> &mut [u8] {
+        unreachable!()
+    }
+
+    fn ra(&mut self, addr: &Self::REG) -> Result<Self::REG, Error> {
+        self.0.ra(addr)
+    }
+
+    fn set_ra(&mut self, _: &Self::REG, _: &Self::REG) -> Result<(), Error> {
+        unreachable!()
+    }
 }
 
 impl<M: SupportMachine> SupportMachine for ReadonlyMachine<'_, M> {
@@ -187,7 +223,7 @@ impl<M: SupportMachine> SupportMachine for ReadonlyMachine<'_, M> {
         unreachable!()
     }
 
-    fn reset(&mut self, _max_cycles: u64) {
+    fn reset(&mut self, _max_cycles: u64) -> Result<(), Error> {
         unreachable!()
     }
 
@@ -284,11 +320,7 @@ where
 {
     type REG = R;
 
-    fn new() -> Self {
-        unreachable!()
-    }
-
-    fn new_with_memory(_memory_size: usize) -> Self {
+    fn new(_: usize) -> Self {
         unreachable!()
     }
 
@@ -434,6 +466,46 @@ where
     fn isa(&self) -> u8 {
         unreachable!()
     }
+
+    fn cfi(&self) -> ckb_vm::elf::CFI {
+        self.snapshot.cfi.into()
+    }
+
+    fn set_cfi(&mut self, _: ckb_vm::elf::CFI) {
+        unreachable!()
+    }
+
+    fn elp(&self) -> u32 {
+        self.snapshot.elp
+    }
+
+    fn set_elp(&mut self, _: u32) {
+        unreachable!()
+    }
+
+    fn ssp(&self) -> &Self::REG {
+        unreachable!()
+    }
+
+    fn set_ssp(&mut self, _: &Self::REG) {
+        unreachable!()
+    }
+
+    fn ss(&self) -> &[u8] {
+        &self.snapshot.ss
+    }
+
+    fn ss_mut(&mut self) -> &mut [u8] {
+        unreachable!()
+    }
+
+    fn ra(&mut self, _: &Self::REG) -> Result<Self::REG, Error> {
+        unreachable!()
+    }
+
+    fn set_ra(&mut self, _: &Self::REG, _: &Self::REG) -> Result<(), Error> {
+        unreachable!()
+    }
 }
 
 impl<I, D, R> SupportMachine for ReadonlySnapshotMachine<'_, I, D, R>
@@ -473,7 +545,7 @@ where
         unreachable!()
     }
 
-    fn reset(&mut self, _max_cycles: u64) {
+    fn reset(&mut self, _max_cycles: u64) -> Result<(), Error> {
         unreachable!()
     }
 
