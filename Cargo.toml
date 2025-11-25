@@ -19,13 +19,20 @@ authors = ["Nervos Core Dev <dev@nervos.org>"]
 
 [workspace.dependencies]
 # CKB dependencies
-ckb-chain-spec = "1.0.0"
-ckb-jsonrpc-types = "1.0.0"
-ckb-script = "1.0.0"
-ckb-std = { version = "=1.0.1", features = ["stub-syscalls"] }
-ckb-traits = "1.0.0"
-ckb-types = "1.0.0"
-ckb-vm = { version = "=0.24.14", features=["pprof"] }
+# ckb-chain-spec = "1.0.0"
+# ckb-jsonrpc-types = "1.0.0"
+# ckb-script = "1.0.0"
+# ckb-std = { version = "=1.0.1", features = ["stub-syscalls"] }
+# ckb-traits = "1.0.0"
+# ckb-types = "1.0.0"
+# ckb-vm = { version = "=0.24.14", features=["pprof"] }
+ckb-chain-spec = { git = "https://github.com/mohanson-fork/ckb", branch = "cfi" }
+ckb-jsonrpc-types = { git = "https://github.com/mohanson-fork/ckb", branch = "cfi" }
+ckb-script = { git = "https://github.com/mohanson-fork/ckb", branch = "cfi" }
+ckb-std = { git = "https://github.com/mohanson-fork/ckb-std", branch = "cfi", features = ["stub-syscalls"] }
+ckb-traits = { git = "https://github.com/mohanson-fork/ckb", branch = "cfi" }
+ckb-types = { git = "https://github.com/mohanson-fork/ckb", branch = "cfi" }
+ckb-vm = { git = "https://github.com/nervosnetwork/ckb-vm", branch = "cfi", features=["pprof"] }
 
 # Crates defined in current workspace
 ckb-mock-tx-types = { path = "ckb-mock-tx-types", version = "1.0.0" }

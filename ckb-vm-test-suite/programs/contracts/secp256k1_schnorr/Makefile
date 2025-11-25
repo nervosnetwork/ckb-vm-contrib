@@ -38,9 +38,11 @@ endif
 
 default: build test
 
-CFLAGS_CKBVM_BASE = --target=riscv64-unknown-elf -march=rv64imc_zba_zbb_zbc_zbs \
+CFLAGS_CKBVM_BASE = --target=riscv64-unknown-elf -march=rv64imc_zba_zbb_zbc_zbs_zicfiss1p0_zicfilp1p0 \
 	$(CLANG_OPTIMIZER) \
-	-fdata-sections -ffunction-sections
+	-fdata-sections -ffunction-sections \
+	-fuse-ld=lld \
+	-menable-experimental-extensions -fcf-protection=full -mcf-branch-label-scheme=func-sig
 CFLAGS_CKBVM_SECP256K1 = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY -DENABLE_MODULE_SCHNORRSIG -DENABLE_MODULE_EXTRAKEYS
@@ -48,7 +50,7 @@ CFLAGS_CKBVM_SECP256K1_SCHNORR = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-Isecp256k1/include -Isecp256k1/src \
 	-Lmusl/release/lib -Lcompiler-rt-builtins-riscv/build \
-	-lc -lgcc -lcompiler-rt \
+	-Wl,--whole-archive -lc -Wl,--no-whole-archive -lgcc -lcompiler-rt \
 	-Wl,--gc-sections
 # Compared to clang-18 and clang-19, clang-20 changes the default arguments passed to ld.lld. So add this line.
 ifeq ($(shell test $(CLANG_VERSION_MAJOR) -ge 20; echo $$?), 0)
@@ -64,6 +66,7 @@ CFLAGS_NATIVE_SECP256K1_SCHNORR = $(CFLAGS_NATIVE_BASE) \
 
 build: compiler-rt-builtins-riscv musl secp256k1
 	$(CLANG) $(CFLAGS_CKBVM_SECP256K1_SCHNORR) -o secp256k1_schnorr_ckbvm secp256k1_schnorr.c secp256k1/build/ckbvm/*
+	$(TOP)/scripts/add_note_section.sh secp256k1_schnorr_ckbvm
 	$(CLANG) $(CFLAGS_NATIVE_SECP256K1_SCHNORR) -o secp256k1_schnorr_native secp256k1_schnorr.c secp256k1/build/native/*
 	@set -eu; \
 	if [ "x$(BUILD_DIR)" != "x" ]; then \
@@ -83,7 +86,7 @@ compiler-rt-builtins-riscv:
 
 musl:
 	ln -s ../../../../deps/musl .
-	cd musl && ./ckb/build.sh
+	cd musl && CFI=func-sig ./ckb/build.sh
 
 secp256k1:
 	ln -s ../../../../deps/secp256k1 .
