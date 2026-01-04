@@ -7,7 +7,6 @@
 #include "sha256.h"
 
 /****************************** MACROS ******************************/
-#define ROTLEFT(a, b) (((a) << (b)) | ((a) >> (32 - (b))))
 #define ROTRIGHT(a, b) (((a) >> (b)) | ((a) << (32 - (b))))
 
 #define CH(x, y, z) (((x) & (y)) ^ (~(x) & (z)))
@@ -32,15 +31,34 @@ static const WORD k[64] = {
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
 /*********************** FUNCTION DEFINITIONS ***********************/
+#define SHA256_ROUND(a, b, c, d, e, f, g, h, ki, mi) \
+  do { \
+    WORD t1 = (h) + EP1(e) + CH(e, f, g) + (ki) + (mi); \
+    WORD t2 = EP0(a) + MAJ(a, b, c); \
+    (h) = (g); \
+    (g) = (f); \
+    (f) = (e); \
+    (e) = (d) + t1; \
+    (d) = (c); \
+    (c) = (b); \
+    (b) = (a); \
+    (a) = t1 + t2; \
+  } while(0)
+
 void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
-  WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+  WORD a, b, c, d, e, f, g, h;
+  WORD m[64];
   const WORD *data32 = (const WORD *)data;
 
-  for (i = 0; i < 16; ++i) {
+  #pragma GCC unroll 16
+  for (int i = 0; i < 16; ++i) {
     m[i] = __builtin_bswap32(data32[i]);
   }
-  for (; i < 64; ++i)
+  
+  #pragma GCC unroll 48
+  for (int i = 16; i < 64; ++i) {
     m[i] = SIG1(m[i - 2]) + m[i - 7] + SIG0(m[i - 15]) + m[i - 16];
+  }
 
   a = ctx->state[0];
   b = ctx->state[1];
@@ -51,17 +69,9 @@ void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
   g = ctx->state[6];
   h = ctx->state[7];
 
-  for (i = 0; i < 64; ++i) {
-    t1 = h + EP1(e) + CH(e, f, g) + k[i] + m[i];
-    t2 = EP0(a) + MAJ(a, b, c);
-    h = g;
-    g = f;
-    f = e;
-    e = d + t1;
-    d = c;
-    c = b;
-    b = a;
-    a = t1 + t2;
+  #pragma GCC unroll 8
+  for (int i = 0; i < 64; ++i) {
+    SHA256_ROUND(a, b, c, d, e, f, g, h, k[i], m[i]);
   }
 
   ctx->state[0] += a;
