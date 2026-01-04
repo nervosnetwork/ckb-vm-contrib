@@ -12,7 +12,7 @@
 #define SIG1(x) (ROTRIGHT(x, 17) ^ ROTRIGHT(x, 19) ^ ((x) >> 10))
 
 /**************************** VARIABLES *****************************/
-static const SHA256_WORD k[64] = {
+static const SHA256_WORD GLOBAL_K[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
     0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
     0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
@@ -43,10 +43,13 @@ static const SHA256_WORD k[64] = {
 void sha256_transform(SHA256_CTX *ctx, const SHA256_BYTE data[]) {
     SHA256_WORD a, b, c, d, e, f, g, h;
     SHA256_WORD m[64];
-    const SHA256_WORD *data32 = (const SHA256_WORD *)data;
+    const SHA256_DWORD *data64 = (const SHA256_DWORD *)data;
 
-    for (int i = 0; i < 16; ++i) {
-        m[i] = __builtin_bswap32(data32[i]);
+#pragma GCC unroll 8
+    for (int i = 0; i < 8; ++i) {
+        SHA256_DWORD temp = __builtin_bswap64(data64[i]);
+        m[2 * i] = (SHA256_WORD)(temp >> 32);
+        m[2 * i + 1] = (SHA256_WORD)temp;
     }
 
 #pragma GCC unroll 48
@@ -65,7 +68,7 @@ void sha256_transform(SHA256_CTX *ctx, const SHA256_BYTE data[]) {
 
 #pragma GCC unroll 64
     for (int i = 0; i < 64; ++i) {
-        SHA256_ROUND(a, b, c, d, e, f, g, h, k[i], m[i]);
+        SHA256_ROUND(a, b, c, d, e, f, g, h, GLOBAL_K[i], m[i]);
     }
 
     ctx->state[0] += a;
@@ -128,18 +131,15 @@ void sha256_final(SHA256_CTX *ctx, SHA256_BYTE hash[]) {
 
     // Append to the padding the total message's length in bits and transform.
     ctx->bitlen += ctx->datalen * 8;
-    ctx->data[63] = ctx->bitlen;
-    ctx->data[62] = ctx->bitlen >> 8;
-    ctx->data[61] = ctx->bitlen >> 16;
-    ctx->data[60] = ctx->bitlen >> 24;
-    ctx->data[59] = ctx->bitlen >> 32;
-    ctx->data[58] = ctx->bitlen >> 40;
-    ctx->data[57] = ctx->bitlen >> 48;
-    ctx->data[56] = ctx->bitlen >> 56;
+    SHA256_DWORD *data64 = (SHA256_DWORD *)&ctx->data[56];
+    *data64 = __builtin_bswap64(ctx->bitlen);
     sha256_transform(ctx, ctx->data);
 
-    SHA256_WORD *hash32 = (SHA256_WORD *)hash;
-    for (i = 0; i < 8; ++i) {
-        hash32[i] = __builtin_bswap32(ctx->state[i]);
+    SHA256_DWORD *hash64 = (SHA256_DWORD *)hash;
+#pragma GCC unroll 4
+    for (i = 0; i < 4; ++i) {
+        SHA256_DWORD temp =
+            ((SHA256_DWORD)ctx->state[2 * i] << 32) | ctx->state[2 * i + 1];
+        hash64[i] = __builtin_bswap64(temp);
     }
 }
