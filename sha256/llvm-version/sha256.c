@@ -50,7 +50,6 @@ void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
   WORD m[64];
   const WORD *data32 = (const WORD *)data;
 
-  #pragma GCC unroll 16
   for (int i = 0; i < 16; ++i) {
     m[i] = __builtin_bswap32(data32[i]);
   }
@@ -69,7 +68,7 @@ void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
   g = ctx->state[6];
   h = ctx->state[7];
 
-  #pragma GCC unroll 8
+  #pragma GCC unroll 64
   for (int i = 0; i < 64; ++i) {
     SHA256_ROUND(a, b, c, d, e, f, g, h, k[i], m[i]);
   }
