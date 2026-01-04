@@ -16,7 +16,7 @@ LDFLAGS = -static -L../../deps/musl/release/lib -L../../deps/compiler-rt-builtin
 
 all: main.o sha256.o
 	$(LD) $(LDFLAGS) -o main $^
-	llvm-strip main
+	llvm-strip -s main
 
 run:
 	ckb-debugger --bin main
@@ -25,7 +25,7 @@ asm: sha256.o
 	llvm-objdump-19 -d -S sha256.o
 
 fmt:
-	clang-format --style="{BasedOnStyle: Google, IndentWidth: 4}" -i *.c
+	clang-format --style="{BasedOnStyle: Google, IndentWidth: 4}" -i *.c *.h
 
 clean:
 	rm -f main.o sha256.o main 

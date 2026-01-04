@@ -1,11 +1,6 @@
 /*************************** HEADER FILES ***************************/
 #include "sha256.h"
 
-#include <memory.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-
 /****************************** MACROS ******************************/
 #define ROTRIGHT(a, b) (((a) >> (b)) | ((a) << (32 - (b))))
 
@@ -17,7 +12,7 @@
 #define SIG1(x) (ROTRIGHT(x, 17) ^ ROTRIGHT(x, 19) ^ ((x) >> 10))
 
 /**************************** VARIABLES *****************************/
-static const WORD k[64] = {
+static const SHA256_WORD k[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
     0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
     0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
@@ -31,24 +26,24 @@ static const WORD k[64] = {
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
 /*********************** FUNCTION DEFINITIONS ***********************/
-#define SHA256_ROUND(a, b, c, d, e, f, g, h, ki, mi)        \
-    do {                                                    \
-        WORD t1 = (h) + EP1(e) + CH(e, f, g) + (ki) + (mi); \
-        WORD t2 = EP0(a) + MAJ(a, b, c);                    \
-        (h) = (g);                                          \
-        (g) = (f);                                          \
-        (f) = (e);                                          \
-        (e) = (d) + t1;                                     \
-        (d) = (c);                                          \
-        (c) = (b);                                          \
-        (b) = (a);                                          \
-        (a) = t1 + t2;                                      \
+#define SHA256_ROUND(a, b, c, d, e, f, g, h, ki, mi)               \
+    do {                                                           \
+        SHA256_WORD t1 = (h) + EP1(e) + CH(e, f, g) + (ki) + (mi); \
+        SHA256_WORD t2 = EP0(a) + MAJ(a, b, c);                    \
+        (h) = (g);                                                 \
+        (g) = (f);                                                 \
+        (f) = (e);                                                 \
+        (e) = (d) + t1;                                            \
+        (d) = (c);                                                 \
+        (c) = (b);                                                 \
+        (b) = (a);                                                 \
+        (a) = t1 + t2;                                             \
     } while (0)
 
-void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
-    WORD a, b, c, d, e, f, g, h;
-    WORD m[64];
-    const WORD *data32 = (const WORD *)data;
+void sha256_transform(SHA256_CTX *ctx, const SHA256_BYTE data[]) {
+    SHA256_WORD a, b, c, d, e, f, g, h;
+    SHA256_WORD m[64];
+    const SHA256_WORD *data32 = (const SHA256_WORD *)data;
 
     for (int i = 0; i < 16; ++i) {
         m[i] = __builtin_bswap32(data32[i]);
@@ -84,20 +79,21 @@ void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
 }
 
 void sha256_init(SHA256_CTX *ctx) {
-    static const uint64_t initial_state[4] = {
+    static const SHA256_DWORD initial_state[4] = {
         0xbb67ae856a09e667ULL, 0xa54ff53a3c6ef372ULL, 0x9b05688c510e527fULL,
         0x5be0cd191f83d9abULL};
 
     ctx->datalen = 0;
     ctx->bitlen = 0;
-    uint64_t *state64 = (uint64_t *)ctx->state;
+    SHA256_DWORD *state64 = (SHA256_DWORD *)ctx->state;
     for (int i = 0; i < 4; i++) {
         state64[i] = initial_state[i];
     }
 }
 
-void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len) {
-    WORD i;
+void sha256_update(SHA256_CTX *ctx, const SHA256_BYTE data[],
+                   SHA256_DWORD len) {
+    SHA256_WORD i;
 
     for (i = 0; i < len; ++i) {
         ctx->data[ctx->datalen] = data[i];
@@ -110,8 +106,8 @@ void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len) {
     }
 }
 
-void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
-    WORD i;
+void sha256_final(SHA256_CTX *ctx, SHA256_BYTE hash[]) {
+    SHA256_WORD i;
 
     i = ctx->datalen;
 
@@ -123,7 +119,11 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
         ctx->data[i++] = 0x80;
         while (i < 64) ctx->data[i++] = 0x00;
         sha256_transform(ctx, ctx->data);
-        memset(ctx->data, 0, 56);
+        // memset(ctx->data, 0, 56);
+        SHA256_DWORD *data64 = (SHA256_DWORD *)ctx->data;
+        for (int j = 0; j < 7; j++) {
+            data64[j] = 0;
+        }
     }
 
     // Append to the padding the total message's length in bits and transform.
@@ -138,7 +138,7 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
     ctx->data[56] = ctx->bitlen >> 56;
     sha256_transform(ctx, ctx->data);
 
-    WORD *hash32 = (WORD *)hash;
+    SHA256_WORD *hash32 = (SHA256_WORD *)hash;
     for (i = 0; i < 8; ++i) {
         hash32[i] = __builtin_bswap32(ctx->state[i]);
     }
