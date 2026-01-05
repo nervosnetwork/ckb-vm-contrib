@@ -97,11 +97,14 @@ void sha256_init(SHA256_CTX *ctx) {
 
 void sha256_update(SHA256_CTX *ctx, const SHA256_BYTE data[],
                    SHA256_DWORD len) {
-    SHA256_WORD i;
+     SHA256_WORD i = 0;
 
-    for (i = 0; i < len; ++i) {
-        ctx->data[ctx->datalen] = data[i];
-        ctx->datalen++;
+    while (i < len) {
+        SHA256_DWORD space = 64 - ctx->datalen;
+        SHA256_DWORD to_copy = (space < len - i) ? space : len - i;
+        __builtin_memcpy(&ctx->data[ctx->datalen], &data[i], to_copy);
+        ctx->datalen += to_copy;
+        i += to_copy;
         if (ctx->datalen == 64) {
             sha256_transform(ctx, ctx->data);
             ctx->bitlen += 512;
