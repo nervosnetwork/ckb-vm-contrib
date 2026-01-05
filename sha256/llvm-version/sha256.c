@@ -118,16 +118,12 @@ void sha256_final(SHA256_CTX *ctx, SHA256_BYTE hash[]) {
     // Pad whatever data is left in the buffer.
     if (ctx->datalen < 56) {
         ctx->data[i++] = 0x80;
-        while (i < 56) ctx->data[i++] = 0x00;
+         __builtin_memset(&ctx->data[i], 0, 56 - i);
     } else {
         ctx->data[i++] = 0x80;
-        while (i < 64) ctx->data[i++] = 0x00;
+         __builtin_memset(&ctx->data[i], 0, 64 - i);
         sha256_transform(ctx, ctx->data);
-        // memset(ctx->data, 0, 56);
-        SHA256_DWORD *data64 = (SHA256_DWORD *)ctx->data;
-        for (int j = 0; j < 7; j++) {
-            data64[j] = 0;
-        }
+         __builtin_memset(ctx->data, 0, 56);
     }
 
     // Append to the padding the total message's length in bits and transform.
