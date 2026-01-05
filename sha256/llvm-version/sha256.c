@@ -30,14 +30,8 @@ static const SHA256_WORD GLOBAL_K[64] = {
     do {                                                           \
         SHA256_WORD t1 = (h) + EP1(e) + CH(e, f, g) + (ki) + (mi); \
         SHA256_WORD t2 = EP0(a) + MAJ(a, b, c);                    \
-        (h) = (g);                                                 \
-        (g) = (f);                                                 \
-        (f) = (e);                                                 \
-        (e) = (d) + t1;                                            \
-        (d) = (c);                                                 \
-        (c) = (b);                                                 \
-        (b) = (a);                                                 \
-        (a) = t1 + t2;                                             \
+        (d) += t1;                                                 \
+        (h) = t1 + t2;                                             \
     } while (0)
 
 void sha256_transform(SHA256_CTX *ctx, const SHA256_BYTE data[]) {
@@ -66,9 +60,16 @@ void sha256_transform(SHA256_CTX *ctx, const SHA256_BYTE data[]) {
     g = ctx->state[6];
     h = ctx->state[7];
 
-#pragma GCC unroll 64
-    for (int i = 0; i < 64; ++i) {
+#pragma GCC unroll 8
+    for (int i = 0; i < 64; i += 8) {
         SHA256_ROUND(a, b, c, d, e, f, g, h, GLOBAL_K[i], m[i]);
+        SHA256_ROUND(h, a, b, c, d, e, f, g, GLOBAL_K[i+1], m[i+1]);
+        SHA256_ROUND(g, h, a, b, c, d, e, f, GLOBAL_K[i+2], m[i+2]);
+        SHA256_ROUND(f, g, h, a, b, c, d, e, GLOBAL_K[i+3], m[i+3]);
+        SHA256_ROUND(e, f, g, h, a, b, c, d, GLOBAL_K[i+4], m[i+4]);
+        SHA256_ROUND(d, e, f, g, h, a, b, c, GLOBAL_K[i+5], m[i+5]);
+        SHA256_ROUND(c, d, e, f, g, h, a, b, GLOBAL_K[i+6], m[i+6]);
+        SHA256_ROUND(b, c, d, e, f, g, h, a, GLOBAL_K[i+7], m[i+7]);
     }
 
     ctx->state[0] += a;
