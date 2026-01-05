@@ -63,13 +63,13 @@ void sha256_transform(SHA256_CTX *ctx, const SHA256_BYTE data[]) {
 #pragma GCC unroll 8
     for (int i = 0; i < 64; i += 8) {
         SHA256_ROUND(a, b, c, d, e, f, g, h, GLOBAL_K[i], m[i]);
-        SHA256_ROUND(h, a, b, c, d, e, f, g, GLOBAL_K[i+1], m[i+1]);
-        SHA256_ROUND(g, h, a, b, c, d, e, f, GLOBAL_K[i+2], m[i+2]);
-        SHA256_ROUND(f, g, h, a, b, c, d, e, GLOBAL_K[i+3], m[i+3]);
-        SHA256_ROUND(e, f, g, h, a, b, c, d, GLOBAL_K[i+4], m[i+4]);
-        SHA256_ROUND(d, e, f, g, h, a, b, c, GLOBAL_K[i+5], m[i+5]);
-        SHA256_ROUND(c, d, e, f, g, h, a, b, GLOBAL_K[i+6], m[i+6]);
-        SHA256_ROUND(b, c, d, e, f, g, h, a, GLOBAL_K[i+7], m[i+7]);
+        SHA256_ROUND(h, a, b, c, d, e, f, g, GLOBAL_K[i + 1], m[i + 1]);
+        SHA256_ROUND(g, h, a, b, c, d, e, f, GLOBAL_K[i + 2], m[i + 2]);
+        SHA256_ROUND(f, g, h, a, b, c, d, e, GLOBAL_K[i + 3], m[i + 3]);
+        SHA256_ROUND(e, f, g, h, a, b, c, d, GLOBAL_K[i + 4], m[i + 4]);
+        SHA256_ROUND(d, e, f, g, h, a, b, c, GLOBAL_K[i + 5], m[i + 5]);
+        SHA256_ROUND(c, d, e, f, g, h, a, b, GLOBAL_K[i + 6], m[i + 6]);
+        SHA256_ROUND(b, c, d, e, f, g, h, a, GLOBAL_K[i + 7], m[i + 7]);
     }
 
     ctx->state[0] += a;
@@ -97,7 +97,7 @@ void sha256_init(SHA256_CTX *ctx) {
 
 void sha256_update(SHA256_CTX *ctx, const SHA256_BYTE data[],
                    SHA256_DWORD len) {
-     SHA256_WORD i = 0;
+    SHA256_WORD i = 0;
 
     while (i < len) {
         SHA256_DWORD space = 64 - ctx->datalen;
@@ -121,12 +121,12 @@ void sha256_final(SHA256_CTX *ctx, SHA256_BYTE hash[]) {
     // Pad whatever data is left in the buffer.
     if (ctx->datalen < 56) {
         ctx->data[i++] = 0x80;
-         __builtin_memset(&ctx->data[i], 0, 56 - i);
+        __builtin_memset(&ctx->data[i], 0, 56 - i);
     } else {
         ctx->data[i++] = 0x80;
-         __builtin_memset(&ctx->data[i], 0, 64 - i);
+        __builtin_memset(&ctx->data[i], 0, 64 - i);
         sha256_transform(ctx, ctx->data);
-         __builtin_memset(ctx->data, 0, 56);
+        __builtin_memset(ctx->data, 0, 56);
     }
 
     // Append to the padding the total message's length in bits and transform.
