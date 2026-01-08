@@ -147,11 +147,14 @@ void sha256_final(SHA256_CTX *ctx, SHA256_BYTE hash[]) {
     *data64 = __builtin_bswap64(ctx->bitlen);
     sha256_transform(ctx, ctx->data);
 
+    const SHA256_DWORD *state64 = (const SHA256_DWORD *)ctx->state;
     SHA256_DWORD *hash64 = (SHA256_DWORD *)hash;
 #pragma GCC unroll 4
     for (i = 0; i < 4; ++i) {
-        SHA256_DWORD temp =
-            ((SHA256_DWORD)ctx->state[2 * i] << 32) | ctx->state[2 * i + 1];
-        hash64[i] = __builtin_bswap64(temp);
+        // State stores [lo, hi] pairs, need to swap within 32-bit halves then bswap64
+        SHA256_DWORD s = state64[i];
+        // Swap the two 32-bit halves: (lo, hi) -> (hi, lo)
+        s = (s >> 32) | (s << 32);
+        hash64[i] = __builtin_bswap64(s);
     }
 }
