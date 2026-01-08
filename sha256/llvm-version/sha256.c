@@ -57,14 +57,20 @@ void sha256_transform(SHA256_CTX *ctx, const SHA256_BYTE data[]) {
         w[i] = m[i] + GLOBAL_K[i];
     }
 
-    a = ctx->state[0];
-    b = ctx->state[1];
-    c = ctx->state[2];
-    d = ctx->state[3];
-    e = ctx->state[4];
-    f = ctx->state[5];
-    g = ctx->state[6];
-    h = ctx->state[7];
+    // Load state using 64-bit operations
+    const SHA256_DWORD *state64 = (const SHA256_DWORD *)ctx->state;
+    SHA256_DWORD s01 = state64[0];
+    SHA256_DWORD s23 = state64[1];
+    SHA256_DWORD s45 = state64[2];
+    SHA256_DWORD s67 = state64[3];
+    a = (SHA256_WORD)s01;
+    b = (SHA256_WORD)(s01 >> 32);
+    c = (SHA256_WORD)s23;
+    d = (SHA256_WORD)(s23 >> 32);
+    e = (SHA256_WORD)s45;
+    f = (SHA256_WORD)(s45 >> 32);
+    g = (SHA256_WORD)s67;
+    h = (SHA256_WORD)(s67 >> 32);
 
 #pragma GCC unroll 8
     for (int i = 0; i < 64; i += 8) {
