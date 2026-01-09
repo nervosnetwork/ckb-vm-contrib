@@ -11,7 +11,7 @@ CFLAGS = --target=riscv64 -march=rv64imc_zba_zbb_zbc_zbs -flto \
 		-fdata-sections -ffunction-sections
 
 LDFLAGS = -static --gc-sections -L../../deps/musl/release/lib -L../../deps/compiler-rt-builtins-riscv/build \
-		-lc -lgcc -lcompiler-rt 
+		-lc -lgcc -lcompiler-rt
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -30,4 +30,4 @@ fmt:
 	clang-format --style="{BasedOnStyle: Google, IndentWidth: 4}" -i *.c *.h
 
 clean:
-	rm -f main.o sha256.o main 
+	rm -f main.o sha256.o main
