@@ -121,13 +121,12 @@ void sha512_init(SHA512_CTX *ctx) {
     __builtin_memcpy(ctx->state, initial_state, sizeof(initial_state));
 }
 
-void sha512_update(SHA512_CTX *ctx, const SHA512_BYTE data[],
-                   SHA512_DWORD len) {
-    SHA512_DWORD i = 0;
+void sha512_update(SHA512_CTX *ctx, const SHA512_BYTE data[], SHA512_WORD len) {
+    SHA512_WORD i = 0;
 
     while (i < len) {
-        SHA512_DWORD space = 128 - ctx->datalen;
-        SHA512_DWORD to_copy = (space < len - i) ? space : len - i;
+        SHA512_WORD space = 128 - ctx->datalen;
+        SHA512_WORD to_copy = (space < len - i) ? space : len - i;
         __builtin_memcpy(&ctx->data[ctx->datalen], &data[i], to_copy);
         ctx->datalen += to_copy;
         i += to_copy;

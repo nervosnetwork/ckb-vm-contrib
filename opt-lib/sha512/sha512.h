@@ -29,6 +29,6 @@ typedef struct {
 
 /*********************** FUNCTION DECLARATIONS **********************/
 void sha512_init(SHA512_CTX *ctx);
-void sha512_update(SHA512_CTX *ctx, const SHA512_BYTE data[], SHA512_DWORD len);
+void sha512_update(SHA512_CTX *ctx, const SHA512_BYTE data[], SHA512_WORD len);
 void sha512_final(SHA512_CTX *ctx, SHA512_BYTE hash[]);
 #endif  // SHA512_H
