@@ -104,16 +104,12 @@ void sha256_transform(SHA256_CTX *ctx, const SHA256_BYTE data[]) {
 }
 
 void sha256_init(SHA256_CTX *ctx) {
+    ctx->datalen = 0;
+    ctx->bitlen = 0;
     static const SHA256_DWORD initial_state[4] = {
         0xbb67ae856a09e667ULL, 0xa54ff53a3c6ef372ULL, 0x9b05688c510e527fULL,
         0x5be0cd191f83d9abULL};
-
-    ctx->datalen = 0;
-    ctx->bitlen = 0;
-    SHA256_DWORD *state64 = (SHA256_DWORD *)ctx->state;
-    for (int i = 0; i < 4; i++) {
-        state64[i] = initial_state[i];
-    }
+    __builtin_memcpy(ctx->state, initial_state, sizeof(initial_state));
 }
 
 void sha256_update(SHA256_CTX *ctx, const SHA256_BYTE data[],

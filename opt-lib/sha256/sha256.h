@@ -31,10 +31,4 @@ typedef struct {
 void sha256_init(SHA256_CTX *ctx);
 void sha256_update(SHA256_CTX *ctx, const SHA256_BYTE data[], SHA256_DWORD len);
 void sha256_final(SHA256_CTX *ctx, SHA256_BYTE hash[]);
-void sha256(const SHA256_BYTE data[], SHA256_DWORD len, SHA256_BYTE hash[]) {
-    SHA256_CTX ctx;
-    sha256_init(&ctx);
-    sha256_update(&ctx, data, len);
-    sha256_final(&ctx, hash);
-}
 #endif  // SHA256_H
