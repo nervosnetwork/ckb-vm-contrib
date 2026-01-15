@@ -1,0 +1,25 @@
+[package]
+name = "ckb-opt-fips202"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Optimized FIPS202 (SHAKE256) implementation for CKB-VM with Rust bindings"
+repository = "https://github.com/nervosnetwork/ckb-vm-contrib"
+keywords = ["fips202", "shake256", "ckb", "risc-v", "cryptography"]
+categories = ["cryptography", "no-std"]
+
+[workspace]
+
+[lib]
+name = "ckb_opt_fips202"
+
+[build-dependencies]
+cc = "1.0"
+
+[dev-dependencies]
+criterion = "0.5"
+sha3 = "0.10"
+
+[[bench]]
+name = "bench_shake256"
+harness = false
