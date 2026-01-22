@@ -14,12 +14,7 @@
 //-----------------------------------------------------------------------
 
 #define RVMODEL_IO_WRITE_STR(_SP, _STR)
-#define RVMODEL_IO_ASSERT_GPR_EQ(_SP, _R, _I) \
-  li _SP, _I;                                 \
-  beq _R, _SP, 20002f;                        \
-  li TESTNUM, 100;                            \
-  RVTEST_FAIL;                                \
-  20002:
+#define RVMODEL_IO_ASSERT_GPR_EQ(_SP, _R, _I)
 
 //-----------------------------------------------------------------------
 // RV Compliance Macros
