@@ -14,7 +14,18 @@
 //-----------------------------------------------------------------------
 
 #define RVMODEL_IO_WRITE_STR(_SP, _STR)
+
+#ifdef DISABLE_GPR_EQ
+// TODO https://github.com/riscv-non-isa/riscv-arch-test/issues/540
 #define RVMODEL_IO_ASSERT_GPR_EQ(_SP, _R, _I)
+#else
+#define RVMODEL_IO_ASSERT_GPR_EQ(_SP, _R, _I) \
+  li _SP, _I;                                 \
+  beq _R, _SP, 20002f;                        \
+  li TESTNUM, 100;                            \
+  RVTEST_FAIL;                                \
+  20002:
+#endif
 
 //-----------------------------------------------------------------------
 // RV Compliance Macros
