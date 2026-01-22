@@ -47,4 +47,20 @@
 #define RVMODEL_CLEAR_MTIMER_INT
 #define RVMODEL_CLEAR_MEXT_INT
 
+//-----------------------------------------------------------------------
+// Pass/Fail macros expected by arch tests
+//-----------------------------------------------------------------------
+
+#define TESTNUM gp
+
+#define RVTEST_PASS \
+  li a0, 0;         \
+  li a7, 93;        \
+  ecall;
+
+#define RVTEST_FAIL \
+  li a7, 93;        \
+  addi a0, TESTNUM, 0; \
+  ecall;
+
 #endif

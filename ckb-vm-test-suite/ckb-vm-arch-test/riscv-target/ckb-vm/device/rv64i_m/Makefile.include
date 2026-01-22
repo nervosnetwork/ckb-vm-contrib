@@ -16,7 +16,7 @@ RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -DXLEN=$
 
 
 COMPILE_TARGET=\
-	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) \
+	$$(RISCV_GCC) $(1) $$(RISCV_GCC_OPTS) \
 		-I$(TARGETDIR)/$(RISCV_TARGET)/ \
 		-I$(ROOTDIR)/../riscv-arch-test/riscv-test-suite/env/ \
 		-T$(TARGETDIR)/$(RISCV_TARGET)/link.ld $$< \
