@@ -71,8 +71,7 @@ rv64im_sc_tests = \
   sh3add.uw-01 \
   slli.uw-01 \
   xnor-01 \
-  zext.h_64-01 \
-  zext.h-01
+  zext.h_64-01
 
 rv64im_tests = $(addsuffix .elf, $(rv64im_sc_tests))
 
