@@ -120,6 +120,10 @@ find work -name "*.log" -delete && make RISCV_TARGET=ckb-vm XLEN=64 RISCV_DEVICE
 find work -name "*.log" -delete && make RISCV_TARGET=ckb-vm XLEN=64 RISCV_DEVICE=C TARGET_SIM="$ASM64" $COMPLIANCE_TARGET
 find work -name "*.log" -delete && make RISCV_TARGET=ckb-vm XLEN=64 RISCV_DEVICE=B TARGET_SIM="$ASM64" $COMPLIANCE_TARGET
 
+cd "$TOP/programs"
+make
+
+cd "$TOP"
 cargo test
 
 echo "All tests are passed!"
