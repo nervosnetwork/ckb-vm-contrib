@@ -40,7 +40,7 @@ $(info RISCV_DEVICE: ${RISCV_DEVICE} [origin: $(origin RISCV_DEVICE)])
 $(info =============================================================================)
 $(info )
 
-RVTEST_DEFINES = 
+RVTEST_DEFINES = -DTEST_CASE_1
 ifeq ($(RISCV_ASSERT),1)
 	RVTEST_DEFINES += -DRVMODEL_ASSERT
 endif
