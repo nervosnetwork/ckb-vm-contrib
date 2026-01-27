@@ -444,7 +444,7 @@ fn fetch_cell(index: u64, source: u64) -> Result<(CellOutput, Bytes), c_int> {
                 TRANSACTION.tx.raw().outputs().get(*actual_index).ok_or(CKB_INDEX_OUT_OF_BOUND).map(|output| {
                     (
                         output,
-                        TRANSACTION.tx.raw().outputs_data().get(index as usize).expect("cell data mismatch").unpack(),
+                        TRANSACTION.tx.raw().outputs_data().get(*actual_index).expect("cell data mismatch").unpack(),
                     )
                 })
             })
