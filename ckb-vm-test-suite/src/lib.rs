@@ -42,6 +42,30 @@ pub fn run_asm(program: &Bytes) {
     assert_eq!(exit, 0);
 }
 
+#[cfg(target_arch = "riscv64")]
+fn current_qemu_instructions() -> u64 {
+    let count: u64;
+    unsafe { core::arch::asm!("rdinstret {}", out(reg) count) };
+    count
+}
+
+#[cfg(target_arch = "riscv64")]
+pub fn run_asm_rv64im(program: &Bytes) {
+    let asm_core = AsmCoreMachine::new(ISA_IMC | ISA_B, VERSION2, u64::MAX);
+    let core = AsmDefaultMachineBuilder::new(asm_core).build();
+    let mut machine = AsmMachine::new(core);
+    let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
+    machine.load_program(&program, args.into_iter().map(Ok)).unwrap();
+
+    let insn_before = current_qemu_instructions();
+    let exit = machine.run().unwrap();
+    let insn_after = current_qemu_instructions();
+    let qemu_executed_cycles: f64 = (insn_after - insn_before) as f64;
+    println!("QEMU instructions executed: {:.1} M", qemu_executed_cycles / 1024.0 / 1024.0);
+
+    assert_eq!(exit, 0);
+}
+
 pub fn run_interpret(program: &Bytes) {
     let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
     let exit = run::<u64, SparseMemory<u64>>(&program, &args).unwrap();
