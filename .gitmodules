@@ -18,4 +18,5 @@
 	url = https://github.com/sphincs/sphincsplus
 [submodule "deps/ckb-vm"]
 	path = deps/ckb-vm
-	url = https://github.com/nervosnetwork/ckb-vm
+	url = https://github.com/mohanson-fork/ckb-vm
+	branch = asm_rv64im

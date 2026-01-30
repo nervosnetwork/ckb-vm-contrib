@@ -1,3 +1,4 @@
+use ckb_vm::cost_model::constant_cycles;
 use ckb_vm::snapshot2::Snapshot2;
 use ckb_vm::{
     Bytes, DefaultMachineRunner, Error, ISA_B, ISA_IMC, ISA_MOP, SparseMemory, SupportMachine,
@@ -39,6 +40,45 @@ pub fn run_asm(program: &Bytes) {
     let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
     machine.load_program(&program, args.into_iter().map(Ok)).unwrap();
     let exit = machine.run().unwrap();
+    assert_eq!(exit, 0);
+}
+
+#[cfg(target_arch = "riscv64")]
+fn current_instructions() -> u64 {
+    let count: u64;
+    unsafe { core::arch::asm!("rdinstret {}", out(reg) count) };
+    count
+}
+
+#[cfg(target_arch = "riscv64")]
+pub fn run_asm_rv64im(program: &Bytes) {
+    let asm_core = AsmCoreMachine::new(ISA_IMC | ISA_B, VERSION2, u64::MAX);
+    let core = AsmDefaultMachineBuilder::new(asm_core).build();
+    let mut machine = AsmMachine::new(core);
+    let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
+    machine.load_program(&program, args.into_iter().map(Ok)).unwrap();
+
+    let insn_before = current_instructions();
+    let exit = machine.run().unwrap();
+    let insn_after = current_instructions();
+    let qemu_executed_cycles: f64 = (insn_after - insn_before) as f64;
+    println!("QEMU instructions executed: {:.1} M", qemu_executed_cycles / 1024.0 / 1024.0);
+
+    assert_eq!(exit, 0);
+}
+
+#[cfg(not(target_arch = "riscv64"))]
+pub fn run_asm_rv64im(program: &Bytes) {
+    let asm_core = AsmCoreMachine::new(ISA_IMC | ISA_B, VERSION2, u64::MAX);
+    let core = AsmDefaultMachineBuilder::new(asm_core).instruction_cycle_func(Box::new(constant_cycles)).build();
+    let mut machine = AsmMachine::new(core);
+    let args = vec![Bytes::copy_from_slice(&NTIMES.clone().as_bytes())];
+    machine.load_program(&program, args.into_iter().map(Ok)).unwrap();
+
+    let exit = machine.run().unwrap();
+    let cycles: f64 = machine.machine.cycles() as f64;
+    println!("CKB-VM consumed instructions: {:.2} M", cycles / 1024.0 / 1024.0);
+
     assert_eq!(exit, 0);
 }
 
