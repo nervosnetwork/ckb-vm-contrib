@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = []
+
+[package]
+name = "k256_ecdsa_sp1"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+k256 = { version = "=0.13.1", default-features = false, features = ["arithmetic", "ecdsa", "alloc"] }
+sp1-zkvm = { git = "https://github.com/succinctlabs/sp1", tag = "v6.0.0-beta.1" }
