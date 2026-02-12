@@ -18,11 +18,16 @@ CLANG := $(shell $(TOP)/scripts/find_clang)
 CLANG_OPTIMIZER := -O2
 # When this is set, a single contract will be built instead of all contracts
 CONTRACT :=
+# Contracts to exclude from build (space-separated, requires special toolchains)
+EXCLUDE_CONTRACTS := k256_ecdsa_sp1
 # By default, we would clean build/{release,debug} folder first, in case old
 # contracts are mixed together with new ones, if for some reason you want to
 # revert this behavior, you can change this to anything other than true
 CLEAN_BUILD_DIR_FIRST := true
 BUILD_DIR := build/$(MODE)
+# Filter out excluded contracts
+EXCLUDE_PATHS := $(foreach c,$(EXCLUDE_CONTRACTS),contracts/$(c))
+ALL_CONTRACTS := $(filter-out $(EXCLUDE_PATHS),$(wildcard contracts/*))
 
 ifeq (release,$(MODE))
 	MODE_ARGS := --release
@@ -47,7 +52,7 @@ build:
 	mkdir -p $(BUILD_DIR)
 	@set -eu; \
 	if [ "x$(CONTRACT)" = "x" ]; then \
-		for contract in $(wildcard contracts/*); do \
+		for contract in $(ALL_CONTRACTS); do \
 			$(MAKE) -e -C $$contract build; \
 		done; \
 		for crate in $(wildcard crates/*); do \
