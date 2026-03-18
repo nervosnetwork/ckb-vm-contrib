@@ -158,7 +158,7 @@ pub trait Collector: Clone + Default {
         sg_data: &SgData<DL>,
         vm_context: &VmContext<DL>,
         data: &Self,
-    ) -> Vec<Box<(dyn Syscalls<M>)>>
+    ) -> Vec<Box<dyn Syscalls<M>>>
     where
         DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
         M: SupportMachine + 'static;
@@ -271,7 +271,7 @@ impl Collector for TxPartsBasedCollector {
         sg_data: &SgData<DL>,
         vm_context: &VmContext<DL>,
         data: &Self,
-    ) -> Vec<Box<(dyn Syscalls<M>)>>
+    ) -> Vec<Box<dyn Syscalls<M>>>
     where
         DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
         M: SupportMachine + 'static,
@@ -314,8 +314,8 @@ struct TxPartsBasedCollectorVMSyscalls<DL, M> {
     vm_id: VmId,
     sg_data: SgData<DL>,
     data: TxPartsBasedCollector,
-    inner_collector_syscalls: Vec<Box<(dyn Syscalls<M>)>>,
-    ckb_syscalls: Vec<Box<(dyn Syscalls<M>)>>,
+    inner_collector_syscalls: Vec<Box<dyn Syscalls<M>>>,
+    ckb_syscalls: Vec<Box<dyn Syscalls<M>>>,
 }
 
 impl<DL: CellDataProvider + Send + Sync, M: SupportMachine> Syscalls<M> for TxPartsBasedCollectorVMSyscalls<DL, M> {
@@ -464,7 +464,7 @@ impl Collector for SyscallBasedCollector {
         sg_data: &SgData<DL>,
         vm_context: &VmContext<DL>,
         data: &Self,
-    ) -> Vec<Box<(dyn Syscalls<M>)>>
+    ) -> Vec<Box<dyn Syscalls<M>>>
     where
         DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
         M: SupportMachine + 'static,
@@ -543,7 +543,7 @@ impl Collector for SyscallBasedCollector {
 struct SyscallBasedCollectorVMSyscalls<M> {
     vm_id: VmId,
     data: SyscallBasedCollector,
-    syscalls: Vec<Box<(dyn Syscalls<M>)>>,
+    syscalls: Vec<Box<dyn Syscalls<M>>>,
 }
 
 impl<M: SupportMachine> Syscalls<M> for SyscallBasedCollectorVMSyscalls<M> {
@@ -812,7 +812,7 @@ impl Collector for GenerationTracker {
         _sg_data: &SgData<DL>,
         _vm_context: &VmContext<DL>,
         data: &Self,
-    ) -> Vec<Box<(dyn Syscalls<M>)>>
+    ) -> Vec<Box<dyn Syscalls<M>>>
     where
         DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
         M: SupportMachine + 'static,
@@ -890,7 +890,7 @@ impl<C: Collector + Send + 'static> Collector for BinaryLocatorCollector<C> {
         sg_data: &SgData<DL>,
         vm_context: &VmContext<DL>,
         data: &Self,
-    ) -> Vec<Box<(dyn Syscalls<M>)>>
+    ) -> Vec<Box<dyn Syscalls<M>>>
     where
         DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
         M: SupportMachine + 'static,
@@ -1000,7 +1000,7 @@ impl<C: Collector + Send + 'static> Collector for BinaryLocatorCollector<C> {
 struct BinaryLocatorCollectorSyscalls<C: Collector, M> {
     vm_id: VmId,
     data: BinaryLocatorCollector<C>,
-    syscalls: Vec<Box<(dyn Syscalls<M>)>>,
+    syscalls: Vec<Box<dyn Syscalls<M>>>,
 }
 
 impl<C: Collector + Send, M: SupportMachine> Syscalls<M> for BinaryLocatorCollectorSyscalls<C, M> {
@@ -1056,7 +1056,7 @@ impl Collector for VmCreateCollector {
         sg_data: &SgData<DL>,
         vm_context: &VmContext<DL>,
         data: &Self,
-    ) -> Vec<Box<(dyn Syscalls<M>)>>
+    ) -> Vec<Box<dyn Syscalls<M>>>
     where
         DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
         M: SupportMachine + 'static,
@@ -1150,7 +1150,7 @@ impl Collector for VmCreateCollector {
 struct VmCreateCollectorVMSyscalls<M> {
     vm_id: VmId,
     data: VmCreateCollector,
-    syscalls: Vec<Box<(dyn Syscalls<M>)>>,
+    syscalls: Vec<Box<dyn Syscalls<M>>>,
 }
 
 impl<M: SupportMachine> Syscalls<M> for VmCreateCollectorVMSyscalls<M> {
@@ -1213,7 +1213,7 @@ macro_rules! define_combine_collector {
                 sg_data: &SgData<DL>,
                 vm_context: &VmContext<DL>,
                 data: &Self,
-            ) -> Vec<Box<(dyn Syscalls<M>)>>
+            ) -> Vec<Box<dyn Syscalls<M>>>
             where
                 DL: CellDataProvider + HeaderProvider + ExtensionProvider + Send + Sync + Clone + 'static,
                 M: SupportMachine + 'static,
@@ -1350,7 +1350,7 @@ fn normalize_locator<DL: CellDataProvider>(
 
 fn delegate_to_syscalls<M: SupportMachine>(
     machine: &mut M,
-    syscalls: &mut [Box<(dyn Syscalls<M>)>],
+    syscalls: &mut [Box<dyn Syscalls<M>>],
 ) -> Result<bool, Error> {
     for syscall in syscalls {
         let processed = syscall.ecall(machine)?;
