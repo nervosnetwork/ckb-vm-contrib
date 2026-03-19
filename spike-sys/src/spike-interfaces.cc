@@ -13,9 +13,12 @@
 
 class memory : public simif_t {
 public:
+  cfg_t cfg;
+
   memory(uint64_t size) {
-    mem = new uint8_t[size];
+    mem = size > 0 ? new uint8_t[size] : nullptr;
     mem_size = size;
+    cfg.hartids = {0};
   }
   ~memory() { delete[] mem; }
   virtual char *addr_to_mem(reg_t addr) { return NULL; }
@@ -35,23 +38,20 @@ public:
   }
   virtual void proc_reset(unsigned id) {}
   virtual const char *get_symbol(uint64_t addr) { return NULL; }
+  virtual const cfg_t &get_cfg() const { return cfg; }
+  virtual const std::map<size_t, processor_t *> &get_harts() const { return harts; }
 
 private:
   uint8_t *mem;
   uint64_t mem_size;
+  std::map<size_t, processor_t *> harts;
 };
 
 uint64_t spike_new_processor(uint64_t mem_size) {
-  memory *mem;
-  if (mem_size > 0) {
-    mem = new memory(mem_size);
-  } else {
-    mem = NULL;
-  }
+  memory *mem = new memory(mem_size);
 
-  isa_parser_t isa("RV64GC_ZBA_ZBB_ZBC_ZBS", "MSU");
   processor_t *proc =
-      new processor_t(isa, "", mem, 0, false, NULL, std::cerr);
+      new processor_t("RV64GC_ZBA_ZBB_ZBC_ZBS", "MSU", &mem->cfg, mem, 0, false, NULL, std::cerr);
   reg_t val = proc->state.sstatus->read();
   proc->state.sstatus->write(val | SSTATUS_VS);
   return (uint64_t)proc;

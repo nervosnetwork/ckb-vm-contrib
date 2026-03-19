@@ -4,7 +4,7 @@ if [ ! -f ./target/libspike-interfaces.a ]; then
     rm -rf riscv-isa-sim
     git clone https://github.com/riscv-software-src/riscv-isa-sim
     cd riscv-isa-sim
-    git checkout e6a2245b
+    git checkout 76ced61
     cd -
 
     sed -i '/softfloat_install_shared_lib/d' riscv-isa-sim/softfloat/softfloat.mk.in
