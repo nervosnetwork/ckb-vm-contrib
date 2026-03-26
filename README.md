@@ -1,7 +1,7 @@
 # CKB-VM-Contrib
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Rust Version](https://img.shields.io/badge/rust-1.85.0-blue.svg)](https://www.rust-lang.org/)
+[![Rust Version](https://img.shields.io/badge/rust-1.92.0-blue.svg)](https://www.rust-lang.org/)
 
 Community-contributed tools, extensions, testing and experimental features for the [CKB-VM](https://github.com/nervosnetwork/ckb-vm) (RISC-V virtual machine).
 
