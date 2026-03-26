@@ -4,8 +4,8 @@ This file provides guidance for AI coding agents working in this repository.
 
 ## Project Overview
 
-CKB-VM-Contrib is a Rust workspace containing community-contributed tools, extensions, 
-and testing frameworks for [CKB-VM](https://github.com/nervosnetwork/ckb-vm), a RISC-V 
+CKB-VM-Contrib is a Rust workspace containing community-contributed tools, extensions,
+and testing frameworks for [CKB-VM](https://github.com/nervosnetwork/ckb-vm), a RISC-V
 virtual machine used by the Nervos CKB blockchain.
 
 ### Workspace Members
@@ -22,7 +22,7 @@ virtual machine used by the Nervos CKB blockchain.
 ## Build Commands
 
 ### Prerequisites
-- Rust 1.85.0 (pinned in `rust-toolchain.toml`)
+- Rust 1.92.0 (pinned in `rust-toolchain.toml`)
 - RISC-V target: `rustup target add riscv64imac-unknown-none-elf`
 - Clang (for C programs)
 - RISC-V GCC toolchain (for test programs)
