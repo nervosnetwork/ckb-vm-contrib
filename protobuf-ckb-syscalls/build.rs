@@ -1,9 +1,21 @@
+use std::path::PathBuf;
+
 fn main() -> std::io::Result<()> {
-    let mut prost_build = prost_build::Config::new();
-    prost_build.btree_map(["."]);
-    prost_build.compile_protos(&["traces.proto"], &[""])?;
+    let generated_dir = PathBuf::from("src/generated");
+    if generated_dir.exists() {
+        return Ok(());
+    }
+
+    std::fs::create_dir_all(&generated_dir)?;
+
+    let mut config = prost_build::Config::new();
+    config.btree_map(["."]);
+    config.out_dir(&generated_dir);
+
     prost_reflect_build::Builder::new()
+        .file_descriptor_set_path(generated_dir.join("file_descriptor_set.bin"))
         .descriptor_pool("crate::generated::traces::DESCRIPTOR_POOL")
-        .compile_protos(&["traces.proto"], &[""])?;
+        .compile_protos_with_config(config, &["traces.proto"], &[""])?;
+
     Ok(())
 }
