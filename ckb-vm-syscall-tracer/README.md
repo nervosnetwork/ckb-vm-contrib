@@ -47,6 +47,12 @@ Content for /tmp/out/vm_0_0.traces:
 VmCreations { vm_creations: [VmCreation { vm_id: 1, generation_id: 0 }, VmCreation { vm_id: 2, generation_id: 0 }, VmCreation { vm_id: 3, generation_id: 0 }, VmCreation { vm_id: 4, generation_id: 0 }, VmCreation { vm_id: 5, generation_id: 0 }, VmCreation { vm_id: 6, generation_id: 0 }, VmCreation { vm_id: 7, generation_id: 0 }, VmCreation { vm_id: 8, generation_id: 0 }, VmCreation { vm_id: 9, generation_id: 0 }, VmCreation { vm_id: 10, generation_id: 0 }, VmCreation { vm_id: 11, generation_id: 0 }, VmCreation { vm_id: 12, generation_id: 0 }, VmCreation { vm_id: 13, generation_id: 0 }, VmCreation { vm_id: 14, generation_id: 0 }, VmCreation { vm_id: 15, generation_id: 0 }, VmCreation { vm_id: 16, generation_id: 0 }] }
 ```
 
+## Development Notes
+
+- Prost-generated files are checked into `src/generated/`
+- `build.rs` only bootstraps generation when `src/generated/` is missing
+- If `protos/traces.proto` changes, delete `src/generated/` and run `cargo build` to regenerate `generated.traces.rs` and `file_descriptor_set.bin`
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.

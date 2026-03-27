@@ -37,6 +37,12 @@ let runner = ProtobufVmRunnerImpls::<DefaultMachine>::new_with_bytes(&data)
 // Use with fuzzing or testing frameworks.
 ```
 
+## Development Notes
+
+- Prost-generated files are checked into `src/generated/`
+- `build.rs` only bootstraps generation when `src/generated/` is missing
+- If `traces.proto` changes, delete `src/generated/` and run `cargo build` to regenerate `generated.traces.rs` and `file_descriptor_set.bin`
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
