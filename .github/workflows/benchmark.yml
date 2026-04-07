@@ -43,7 +43,7 @@ jobs:
         DATE=$(date +%Y-%m-%d)
         mkdir -p /tmp/bench-results
         python3 benchmarks/collect_results.py \
-          --criterion-dir ckb-vm-test-suite/target/criterion \
+          --criterion-dir target/criterion \
           --output /tmp/bench-results/${DATE}.json \
           --date "${DATE}" \
           --commit "${GITHUB_SHA}"
