@@ -43,7 +43,7 @@ jobs:
         DATE=$(date +%Y-%m-%d)
         mkdir -p /tmp/bench-results
         python3 benchmarks/collect_results.py \
-          --criterion-dir ckb-vm-test-suite/target/criterion \
+          --criterion-dir target/criterion \
           --output /tmp/bench-results/${DATE}.json \
           --date "${DATE}" \
           --commit "${GITHUB_SHA}"
@@ -91,6 +91,6 @@ jobs:
         cp /tmp/deploy/index.html .
 
         # Commit and push
-        git add -A
+        git add data/ index.html
         git diff --cached --quiet || git commit -m "Benchmark results for ${DATE}"
         git push origin gh-pages
