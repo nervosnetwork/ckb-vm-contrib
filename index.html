@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CKB-VM Benchmark Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 30px 0 10px; }
+        header h1 { font-size: 28px; color: #1a1a2e; }
+        header p { color: #666; margin-top: 8px; font-size: 15px; }
+        .tabs {
+            display: flex; gap: 8px; justify-content: center;
+            margin: 20px 0; flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 24px; border: none; border-radius: 8px;
+            background: #e0e5ec; color: #555; cursor: pointer;
+            font-size: 14px; font-weight: 600; transition: all 0.2s;
+        }
+        .tab.active { background: #3a86ff; color: #fff; }
+        .tab:hover { background: #cdd5e0; }
+        .tab.active:hover { background: #2d6fcc; }
+        .card {
+            background: #fff; border-radius: 12px; padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 20px 0;
+        }
+        .card h2 { margin-bottom: 16px; font-size: 18px; color: #1a1a2e; }
+        canvas { max-height: 500px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 16px; text-align: left; border-bottom: 1px solid #eee; }
+        th { font-weight: 600; color: #666; font-size: 13px; text-transform: uppercase; }
+        td { font-size: 14px; }
+        .loading { text-align: center; padding: 40px; color: #999; }
+        .commit-link { color: #3a86ff; text-decoration: none; font-family: monospace; }
+        .commit-link:hover { text-decoration: underline; }
+        footer { text-align: center; padding: 20px; color: #999; font-size: 13px; }
+        footer a { color: #3a86ff; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CKB-VM Benchmark Dashboard</h1>
+            <p>Cycles Per Byte (cpb) &mdash; Daily Performance Tracking</p>
+        </header>
+
+        <div class="tabs" id="group-tabs">
+            <button class="tab active" data-group="asm">ASM</button>
+            <button class="tab" data-group="interpret">Interpret</button>
+            <button class="tab" data-group="mop">MOP</button>
+            <button class="tab" data-group="native">Native</button>
+        </div>
+
+        <div class="card">
+            <canvas id="cpb-chart"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Latest Results</h2>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Algorithm</th>
+                            <th>CPB</th>
+                            <th>Total Cycles</th>
+                            <th>Binary Size</th>
+                            <th>Date</th>
+                            <th>Commit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <tr><td colspan="6" class="loading">Loading benchmark data&hellip;</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer>
+            Powered by
+            <a href="https://github.com/criterion-rs/criterion-cycles-per-byte">criterion-cycles-per-byte</a>
+            &middot;
+            <a href="https://github.com/nervosnetwork/ckb-vm-contrib">Source</a>
+        </footer>
+    </div>
+
+    <script>
+    const COLORS = [
+        '#3a86ff', '#ff006e', '#8338ec', '#fb5607',
+        '#06d6a0', '#118ab2', '#ef476f', '#ffd166'
+    ];
+    const REPO = 'https://github.com/nervosnetwork/ckb-vm-contrib';
+
+    let allData = [];
+    let chart = null;
+    let currentGroup = 'asm';
+
+    async function loadData() {
+        try {
+            const resp = await fetch('data/index.json');
+            if (!resp.ok) throw new Error('No index');
+            const dates = await resp.json();
+
+            const results = await Promise.all(
+                dates.map(d => fetch(`data/${d}.json`).then(r => r.json()))
+            );
+            allData = results.sort((a, b) => a.date.localeCompare(b.date));
+
+            renderChart();
+            renderTable();
+        } catch {
+            document.getElementById('results-body').innerHTML =
+                '<tr><td colspan="6" class="loading">No benchmark data available yet.</td></tr>';
+        }
+    }
+
+    function algorithms(group) {
+        const s = new Set();
+        allData.forEach(d => {
+            if (d.results[group])
+                Object.keys(d.results[group]).forEach(a => s.add(a));
+        });
+        return [...s].sort();
+    }
+
+    function renderChart() {
+        const algs = algorithms(currentGroup);
+        const dates = allData.map(d => d.date);
+
+        const datasets = algs.map((alg, i) => ({
+            label: alg,
+            data: allData.map(d => {
+                const r = d.results[currentGroup];
+                return r && r[alg] ? r[alg].cpb : null;
+            }),
+            borderColor: COLORS[i % COLORS.length],
+            backgroundColor: COLORS[i % COLORS.length] + '20',
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            spanGaps: true
+        }));
+
+        if (chart) chart.destroy();
+
+        chart = new Chart(document.getElementById('cpb-chart'), {
+            type: 'line',
+            data: { labels: dates, datasets },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `Cycles Per Byte — ${currentGroup.toUpperCase()}`,
+                        font: { size: 16 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx =>
+                                `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(4)} cpb`
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Date' } },
+                    y: {
+                        title: { display: true, text: 'Cycles Per Byte (cpb)' },
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+
+    function renderTable() {
+        const latest = allData[allData.length - 1];
+        if (!latest) return;
+
+        const group = latest.results[currentGroup];
+        if (!group) return;
+
+        const tbody = document.getElementById('results-body');
+        tbody.innerHTML = '';
+
+        Object.entries(group).sort().forEach(([alg, d]) => {
+            const tr = document.createElement('tr');
+            const sha = latest.commit.substring(0, 7);
+            tr.innerHTML = `
+                <td><strong>${alg}</strong></td>
+                <td>${d.cpb != null ? d.cpb.toFixed(4) : 'N/A'}</td>
+                <td>${d.cycles != null ? d.cycles.toLocaleString() : 'N/A'}</td>
+                <td>${d.bytes != null ? formatBytes(d.bytes) : 'N/A'}</td>
+                <td>${latest.date}</td>
+                <td><a class="commit-link" href="${REPO}/commit/${latest.commit}">${sha}</a></td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function formatBytes(n) {
+        if (n < 1024) return n + ' B';
+        if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+        return (n / 1048576).toFixed(1) + ' MB';
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentGroup = tab.dataset.group;
+            renderChart();
+            renderTable();
+        });
+    });
+
+    loadData();
+    </script>
+</body>
+</html>
