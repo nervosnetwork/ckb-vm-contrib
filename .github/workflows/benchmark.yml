@@ -1,0 +1,96 @@
+name: Daily Benchmark
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Clang
+      run: clang --version
+
+    - name: Setup Rust Target
+      run: rustup target add riscv64imac-unknown-none-elf
+
+    - name: Setup RISC-V GCC Toolchain
+      run: |
+        cd ckb-vm-test-suite
+        docker run --rm -v $(pwd):/code nervos/ckb-riscv-gnu-toolchain:bionic-20210804 cp -r /riscv /code/
+
+    - name: Build Programs
+      run: |
+        cd ckb-vm-test-suite/programs
+        make build
+
+    - name: Run Benchmarks
+      run: |
+        cd ckb-vm-test-suite
+        cargo bench --bench algorithm
+
+    - name: Collect Results
+      run: |
+        DATE=$(date +%Y-%m-%d)
+        mkdir -p /tmp/bench-results
+        python3 benchmarks/collect_results.py \
+          --criterion-dir ckb-vm-test-suite/target/criterion \
+          --output /tmp/bench-results/${DATE}.json \
+          --date "${DATE}" \
+          --commit "${GITHUB_SHA}"
+
+    - name: Deploy to GitHub Pages
+      run: |
+        DATE=$(date +%Y-%m-%d)
+
+        # Save artifacts before switching branches
+        mkdir -p /tmp/deploy
+        cp /tmp/bench-results/${DATE}.json /tmp/deploy/
+        cp benchmarks/index.html /tmp/deploy/
+
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Switch to gh-pages branch (create if needed)
+        if git ls-remote --exit-code origin gh-pages > /dev/null 2>&1; then
+          git fetch origin gh-pages
+          git checkout gh-pages
+        else
+          git checkout --orphan gh-pages
+          git reset --hard
+          git clean -fdx
+        fi
+
+        # Add new daily results
+        mkdir -p data
+        cp /tmp/deploy/${DATE}.json data/
+
+        # Update data index (list of available dates)
+        python3 -c "
+        import json, glob, os
+        dates = sorted(
+            os.path.basename(f).replace('.json', '')
+            for f in glob.glob('data/*.json')
+            if os.path.basename(f) != 'index.json'
+        )
+        with open('data/index.json', 'w') as f:
+            json.dump(dates, f)
+        print(f'Index updated: {len(dates)} entries')
+        "
+
+        # Copy frontend
+        cp /tmp/deploy/index.html .
+
+        # Commit and push
+        git add -A
+        git diff --cached --quiet || git commit -m "Benchmark results for ${DATE}"
+        git push origin gh-pages

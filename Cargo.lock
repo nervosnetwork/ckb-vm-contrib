@@ -675,6 +675,7 @@ version = "1.1.1"
 dependencies = [
  "ckb-vm 0.24.0",
  "criterion",
+ "criterion-cycles-per-byte",
  "rand 0.9.2",
 ]
 
@@ -797,6 +798,16 @@ dependencies = [
  "serde_json",
  "tinytemplate",
  "walkdir",
+]
+
+[[package]]
+name = "criterion-cycles-per-byte"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1029452fa751c93f8834962dd74807d69f0a6c7624d5b06625b393aeb6a14fc2"
+dependencies = [
+ "cfg-if",
+ "criterion",
 ]
 
 [[package]]
