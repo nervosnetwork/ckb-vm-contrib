@@ -45,6 +45,7 @@ CFLAGS_CKBVM_SECP256K1 = $(CFLAGS_CKBVM_BASE) \
 	-isystem musl/release/include \
 	-DECMULT_WINDOW_SIZE=6 -DENABLE_MODULE_RECOVERY
 CFLAGS_CKBVM_SECP256K1_ECDSA = $(CFLAGS_CKBVM_BASE) \
+	-fuse-ld=lld \
 	-isystem musl/release/include \
 	-Isecp256k1/include -Isecp256k1/src \
 	-Lmusl/release/lib -Lcompiler-rt-builtins-riscv/build \
