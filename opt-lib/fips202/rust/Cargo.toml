@@ -17,9 +17,4 @@ name = "ckb_opt_fips202"
 cc = "1.0"
 
 [dev-dependencies]
-criterion = "0.5"
-sha3 = "0.10"
-
-[[bench]]
-name = "bench_shake256"
-harness = false
+sha3 = { version = "0.11", default-features = false }

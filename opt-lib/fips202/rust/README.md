@@ -2,24 +2,12 @@
 
 Rust bindings for the optimized FIPS202 implementation for CKB-VM.
 
-## Currently Supported
 
-- SHAKE256 absorb/squeeze API
+## Performance benchmark
 
-## Running Tests
-
-```sh
-cargo test
-```
-
-## Running Benchmarks
+The project we compared is <https://crates.io/crates/sha3>
 
 ```sh
-cargo bench
+$ cargo run --release --example ckb_opt_fips202_shake256 # All cycles: 206003627(196.5M)
+$ cargo run --release --example sha3_shake256            # All cycles: 487403648(464.8M)
 ```
-
-The benchmark includes a baseline implementation from the `sha3` crate.
-
-## License
-
-MIT
