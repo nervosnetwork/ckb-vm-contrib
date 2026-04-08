@@ -1,11 +1,4 @@
-use ckb_opt_fips202::{absorb, squeeze, Shake256};
-
-fn digest32(input: &[u8]) -> [u8; 32] {
-    let mut state = absorb(input);
-    let mut output = [0u8; 32];
-    squeeze(&mut state, &mut output);
-    output
-}
+use ckb_opt_fips202::Shake256;
 
 #[test]
 fn test_ax1000000() {

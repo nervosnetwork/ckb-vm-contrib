@@ -22,13 +22,14 @@
  *
  * Returns the loaded 64-bit unsigned integer
  **************************************************/
-static uint64_t load64(const uint8_t* x) {
-    uint64_t r = 0;
-    for (size_t i = 0; i < 8; ++i) {
-        r |= (uint64_t)x[i] << 8 * i;
-    }
-
+static uint64_t load64(const uint8_t *x) {
+    uint64_t r;
+    __builtin_memcpy(&r, x, 8);
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    return __builtin_bswap64(r);
+#else
     return r;
+#endif
 }
 
 /*************************************************
@@ -39,10 +40,11 @@ static uint64_t load64(const uint8_t* x) {
  * Arguments:   - uint8_t *x: pointer to the output byte array
  *              - uint64_t u: input 64-bit unsigned integer
  **************************************************/
-static void store64(uint8_t* x, uint64_t u) {
-    for (size_t i = 0; i < 8; ++i) {
-        x[i] = (uint8_t)(u >> 8 * i);
-    }
+static void store64(uint8_t *x, uint64_t u) {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    u = __builtin_bswap64(u);
+#endif
+    __builtin_memcpy(x, &u, 8);
 }
 
 /* Keccak round constants */
@@ -345,9 +347,7 @@ static void keccak_absorb(uint64_t* s, uint32_t r, const uint8_t* m,
     uint8_t t[200];
 
     /* Zero state */
-    for (i = 0; i < 25; ++i) {
-        s[i] = 0;
-    }
+    __builtin_memset(s, 0, 25 * sizeof(uint64_t));
 
     while (mlen >= r) {
         for (i = 0; i < r / 8; ++i) {
@@ -359,13 +359,10 @@ static void keccak_absorb(uint64_t* s, uint32_t r, const uint8_t* m,
         m += r;
     }
 
-    for (i = 0; i < r; ++i) {
-        t[i] = 0;
-    }
-    for (i = 0; i < mlen; ++i) {
-        t[i] = m[i];
-    }
-    t[i] = p;
+    __builtin_memset(t, 0, r);
+    __builtin_memcpy(t, m, mlen);
+    t[mlen] = p;
+
     t[r - 1] |= 128;
     for (i = 0; i < r / 8; ++i) {
         s[i] ^= load64(t + 8 * i);
@@ -408,12 +405,7 @@ static void keccak_squeezeblocks(uint8_t* h, size_t nblocks, uint64_t* s,
  *                that have not been permuted, or not-yet-squeezed bytes.
  **************************************************/
 static void keccak_inc_init(uint64_t* s_inc) {
-    size_t i;
-
-    for (i = 0; i < 25; ++i) {
-        s_inc[i] = 0;
-    }
-    s_inc[25] = 0;
+    __builtin_memset(s_inc, 0, 26 * sizeof(uint64_t));
 }
 
 /*************************************************
@@ -587,8 +579,6 @@ void shake256(uint8_t* output, size_t outlen, const uint8_t* input,
 
     if (outlen) {
         shake256_squeezeblocks(t, 1, s);
-        for (size_t i = 0; i < outlen; ++i) {
-            output[i] = t[i];
-        }
+        __builtin_memcpy(output, t, outlen);
     }
 }

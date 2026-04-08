@@ -1,9 +1,6 @@
 // use ckb_opt_fips202::{absorb, squeeze};
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use sha3::{
-    digest::{ExtendableOutput, Update, XofReader},
-    Shake256,
-};
+use sha3::digest::{ExtendableOutput, Update, XofReader};
 
 fn bench_shake256(c: &mut Criterion) {
     let mut group = c.benchmark_group("shake256");
@@ -23,7 +20,7 @@ fn bench_shake256(c: &mut Criterion) {
         });
         group.bench_with_input(BenchmarkId::new("sha3", size), &m, |b, data| {
             b.iter(|| {
-                let mut hasher = Shake256::default();
+                let mut hasher = sha3::Shake256::default();
                 hasher.update(black_box(data));
                 let mut reader = hasher.finalize_xof();
                 let mut out = [0u8; 64];
