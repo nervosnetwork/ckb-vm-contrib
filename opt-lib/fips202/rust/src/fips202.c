@@ -510,6 +510,79 @@ static void keccak_inc_squeeze(uint8_t* h, size_t outlen, uint64_t* s_inc,
     }
 }
 
+void shake128_inc_init(uint64_t* s_inc) { keccak_inc_init(s_inc); }
+
+void shake128_inc_absorb(uint64_t* s_inc, const uint8_t* input, size_t inlen) {
+    keccak_inc_absorb(s_inc, SHAKE128_RATE, input, inlen);
+}
+
+void shake128_inc_finalize(uint64_t* s_inc) {
+    keccak_inc_finalize(s_inc, SHAKE128_RATE, 0x1F);
+}
+
+void shake128_inc_squeeze(uint8_t* output, size_t outlen, uint64_t* s_inc) {
+    keccak_inc_squeeze(output, outlen, s_inc, SHAKE128_RATE);
+}
+
+/*************************************************
+ * Name:        shake128_absorb
+ *
+ * Description: Absorb step of the SHAKE128 XOF.
+ *              non-incremental, starts by zeroeing the state.
+ *
+ * Arguments:   - uint64_t *s: pointer to (uninitialized) output Keccak state
+ *              - const uint8_t *input: pointer to input to be absorbed
+ *                                            into s
+ *              - size_t inlen: length of input in bytes
+ **************************************************/
+void shake128_absorb(uint64_t* s, const uint8_t* input, size_t inlen) {
+    keccak_absorb(s, SHAKE128_RATE, input, inlen, 0x1F);
+}
+
+/*************************************************
+ * Name:        shake128_squeezeblocks
+ *
+ * Description: Squeeze step of SHAKE128 XOF. Squeezes full blocks of
+ *              SHAKE128_RATE bytes each. Modifies the state. Can be called
+ *              multiple times to keep squeezing, i.e., is incremental.
+ *
+ * Arguments:   - uint8_t *output: pointer to output blocks
+ *              - size_t nblocks: number of blocks to be squeezed
+ *                                (written to output)
+ *              - uint64_t *s: pointer to input/output Keccak state
+ **************************************************/
+void shake128_squeezeblocks(uint8_t* output, size_t nblocks, uint64_t* s) {
+    keccak_squeezeblocks(output, nblocks, s, SHAKE128_RATE);
+}
+
+/*************************************************
+ * Name:        shake128
+ *
+ * Description: SHAKE128 XOF with non-incremental API
+ *
+ * Arguments:   - uint8_t *output: pointer to output
+ *              - size_t outlen: requested output length in bytes
+ *              - const uint8_t *input: pointer to input
+ *              - size_t inlen: length of input in bytes
+ **************************************************/
+void shake128(uint8_t* output, size_t outlen, const uint8_t* input,
+              size_t inlen) {
+    size_t nblocks = outlen / SHAKE128_RATE;
+    uint8_t t[SHAKE128_RATE];
+    uint64_t s[25];
+
+    shake128_absorb(s, input, inlen);
+    shake128_squeezeblocks(output, nblocks, s);
+
+    output += nblocks * SHAKE128_RATE;
+    outlen -= nblocks * SHAKE128_RATE;
+
+    if (outlen) {
+        shake128_squeezeblocks(t, 1, s);
+        __builtin_memcpy(output, t, outlen);
+    }
+}
+
 void shake256_inc_init(uint64_t* s_inc) { keccak_inc_init(s_inc); }
 
 void shake256_inc_absorb(uint64_t* s_inc, const uint8_t* input, size_t inlen) {
