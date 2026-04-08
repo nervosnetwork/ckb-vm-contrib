@@ -11,45 +11,27 @@ mod ffi {
     use core::ffi::c_uchar;
 
     extern "C" {
-        pub fn shake128_inc_init(s_inc: *mut u64);
         pub fn shake128_inc_absorb(s_inc: *mut u64, input: *const c_uchar, inlen: usize);
         pub fn shake128_inc_finalize(s_inc: *mut u64);
         pub fn shake128_inc_squeeze(output: *mut c_uchar, outlen: usize, s_inc: *mut u64);
 
-        pub fn shake256_inc_init(s_inc: *mut u64);
         pub fn shake256_inc_absorb(s_inc: *mut u64, input: *const c_uchar, inlen: usize);
         pub fn shake256_inc_finalize(s_inc: *mut u64);
         pub fn shake256_inc_squeeze(output: *mut c_uchar, outlen: usize, s_inc: *mut u64);
     }
 }
 
-/// Internal SHAKE128 state used between absorb and squeeze operations.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Shake128State {
-    state: [u64; 26],
-}
-
 /// SHAKE128 hasher.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Shake128 {
     state: [u64; 26],
-}
-
-impl Default for Shake128 {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl Shake128 {
     /// Creates a new SHAKE128 hasher instance.
     #[inline]
     pub fn new() -> Self {
-        let mut state = [0u64; 26];
-        unsafe {
-            ffi::shake128_inc_init(state.as_mut_ptr());
-        }
-        Self { state }
+        Default::default()
     }
 
     /// Absorbs input bytes into the hasher state.
@@ -74,33 +56,17 @@ impl Shake128 {
     }
 }
 
-/// Internal SHAKE256 state used between absorb and squeeze operations.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Shake256State {
-    state: [u64; 26],
-}
-
 /// SHAKE256 hasher.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Shake256 {
     state: [u64; 26],
-}
-
-impl Default for Shake256 {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl Shake256 {
     /// Creates a new SHAKE256 hasher instance.
     #[inline]
     pub fn new() -> Self {
-        let mut state = [0u64; 26];
-        unsafe {
-            ffi::shake256_inc_init(state.as_mut_ptr());
-        }
-        Self { state }
+        Default::default()
     }
 
     /// Absorbs input bytes into the hasher state.

@@ -7,4 +7,5 @@ This folder contains an optimized implementation of FIPS202 for CKB-VM. The orig
 
 ## The implementation includes the following functions:
 
+- shake128
 - shake256
