@@ -7,23 +7,20 @@
 
 #include "fips202.h"
 
-#include <stddef.h>
-#include <stdint.h>
-
 #define NROUNDS 24
 #define ROL(a, offset) (((a) << (offset)) ^ ((a) >> (64 - (offset))))
 
 /*************************************************
  * Name:        load64
  *
- * Description: Load 8 bytes into uint64_t in little-endian order
+ * Description: Load 8 bytes into FIPS202_UINT64 in little-endian order
  *
- * Arguments:   - const uint8_t *x: pointer to input byte array
+ * Arguments:   - const FIPS202_UINT8 *x: pointer to input byte array
  *
  * Returns the loaded 64-bit unsigned integer
  **************************************************/
-static uint64_t load64(const uint8_t* x) {
-    uint64_t r;
+static FIPS202_UINT64 load64(const FIPS202_UINT8* x) {
+    FIPS202_UINT64 r;
     __builtin_memcpy(&r, x, 8);
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
     return __builtin_bswap64(r);
@@ -37,10 +34,10 @@ static uint64_t load64(const uint8_t* x) {
  *
  * Description: Store a 64-bit integer to a byte array in little-endian order
  *
- * Arguments:   - uint8_t *x: pointer to the output byte array
- *              - uint64_t u: input 64-bit unsigned integer
+ * Arguments:   - FIPS202_UINT8 *x: pointer to the output byte array
+ *              - FIPS202_UINT64 u: input 64-bit unsigned integer
  **************************************************/
-static void store64(uint8_t* x, uint64_t u) {
+static void store64(FIPS202_UINT8* x, FIPS202_UINT64 u) {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
     u = __builtin_bswap64(u);
 #endif
@@ -48,7 +45,7 @@ static void store64(uint8_t* x, uint64_t u) {
 }
 
 /* Keccak round constants */
-static const uint64_t KeccakF_RoundConstants[NROUNDS] = {
+static const FIPS202_UINT64 KeccakF_RoundConstants[NROUNDS] = {
     0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL,
     0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
     0x8000000080008081ULL, 0x8000000000008009ULL, 0x000000000000008aULL,
@@ -63,23 +60,23 @@ static const uint64_t KeccakF_RoundConstants[NROUNDS] = {
  *
  * Description: The Keccak F1600 Permutation
  *
- * Arguments:   - uint64_t *state: pointer to input/output Keccak state
+ * Arguments:   - FIPS202_UINT64 *state: pointer to input/output Keccak state
  **************************************************/
-static void KeccakF1600_StatePermute(uint64_t* state) {
+static void KeccakF1600_StatePermute(FIPS202_UINT64* state) {
     int round;
 
-    uint64_t Aba, Abe, Abi, Abo, Abu;
-    uint64_t Aga, Age, Agi, Ago, Agu;
-    uint64_t Aka, Ake, Aki, Ako, Aku;
-    uint64_t Ama, Ame, Ami, Amo, Amu;
-    uint64_t Asa, Ase, Asi, Aso, Asu;
-    uint64_t BCa, BCe, BCi, BCo, BCu;
-    uint64_t Da, De, Di, Do, Du;
-    uint64_t Eba, Ebe, Ebi, Ebo, Ebu;
-    uint64_t Ega, Ege, Egi, Ego, Egu;
-    uint64_t Eka, Eke, Eki, Eko, Eku;
-    uint64_t Ema, Eme, Emi, Emo, Emu;
-    uint64_t Esa, Ese, Esi, Eso, Esu;
+    FIPS202_UINT64 Aba, Abe, Abi, Abo, Abu;
+    FIPS202_UINT64 Aga, Age, Agi, Ago, Agu;
+    FIPS202_UINT64 Aka, Ake, Aki, Ako, Aku;
+    FIPS202_UINT64 Ama, Ame, Ami, Amo, Amu;
+    FIPS202_UINT64 Asa, Ase, Asi, Aso, Asu;
+    FIPS202_UINT64 BCa, BCe, BCi, BCo, BCu;
+    FIPS202_UINT64 Da, De, Di, Do, Du;
+    FIPS202_UINT64 Eba, Ebe, Ebi, Ebo, Ebu;
+    FIPS202_UINT64 Ega, Ege, Egi, Ego, Egu;
+    FIPS202_UINT64 Eka, Eke, Eki, Eko, Eku;
+    FIPS202_UINT64 Ema, Eme, Emi, Emo, Emu;
+    FIPS202_UINT64 Esa, Ese, Esi, Eso, Esu;
 
     // copyFromState(A, state)
     Aba = state[0];
@@ -334,20 +331,22 @@ static void KeccakF1600_StatePermute(uint64_t* state) {
  * Description: Absorb step of Keccak;
  *              non-incremental, starts by zeroeing the state.
  *
- * Arguments:   - uint64_t *s: pointer to (uninitialized) output Keccak state
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
- *              - const uint8_t *m: pointer to input to be absorbed into s
- *              - size_t mlen: length of input in bytes
- *              - uint8_t p: domain-separation byte for different
+ * Arguments:   - FIPS202_UINT64 *s: pointer to (uninitialized) output Keccak
+ * state
+ *              - FIPS202_UINT32 r: rate in bytes (e.g., 168 for SHAKE128)
+ *              - const FIPS202_UINT8 *m: pointer to input to be absorbed into s
+ *              - FIPS202_SIZE_T mlen: length of input in bytes
+ *              - FIPS202_UINT8 p: domain-separation byte for different
  *                                 Keccak-derived functions
  **************************************************/
-static void keccak_absorb(uint64_t* s, uint32_t r, const uint8_t* m,
-                          size_t mlen, uint8_t p) {
-    size_t i;
-    uint8_t t[200];
+static void keccak_absorb(FIPS202_UINT64* s, FIPS202_UINT32 r,
+                          const FIPS202_UINT8* m, FIPS202_SIZE_T mlen,
+                          FIPS202_UINT8 p) {
+    FIPS202_SIZE_T i;
+    FIPS202_UINT8 t[200];
 
     /* Zero state */
-    __builtin_memset(s, 0, 25 * sizeof(uint64_t));
+    __builtin_memset(s, 0, 25 * sizeof(FIPS202_UINT64));
 
     while (mlen >= r) {
         for (i = 0; i < r / 8; ++i) {
@@ -376,17 +375,17 @@ static void keccak_absorb(uint64_t* s, uint32_t r, const uint8_t* m,
  *              Modifies the state. Can be called multiple times to keep
  *              squeezing, i.e., is incremental.
  *
- * Arguments:   - uint8_t *h: pointer to output blocks
- *              - size_t nblocks: number of blocks to be
+ * Arguments:   - FIPS202_UINT8 *h: pointer to output blocks
+ *              - FIPS202_SIZE_T nblocks: number of blocks to be
  *                                                squeezed (written to h)
- *              - uint64_t *s: pointer to input/output Keccak state
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
+ *              - FIPS202_UINT64 *s: pointer to input/output Keccak state
+ *              - FIPS202_UINT32 r: rate in bytes (e.g., 168 for SHAKE128)
  **************************************************/
-static void keccak_squeezeblocks(uint8_t* h, size_t nblocks, uint64_t* s,
-                                 uint32_t r) {
+static void keccak_squeezeblocks(FIPS202_UINT8* h, FIPS202_SIZE_T nblocks,
+                                 FIPS202_UINT64* s, FIPS202_UINT32 r) {
     while (nblocks > 0) {
         KeccakF1600_StatePermute(s);
-        for (size_t i = 0; i < (r >> 3); i++) {
+        for (FIPS202_SIZE_T i = 0; i < (r >> 3); i++) {
             store64(h + 8 * i, s[i]);
         }
         h += r;
@@ -399,13 +398,13 @@ static void keccak_squeezeblocks(uint8_t* h, size_t nblocks, uint64_t* s,
  *
  * Description: Initializes the incremental Keccak state to zero.
  *
- * Arguments:   - uint64_t *s_inc: pointer to input/output incremental state
- *                First 25 values represent Keccak state.
- *                26th value represents either the number of absorbed bytes
- *                that have not been permuted, or not-yet-squeezed bytes.
+ * Arguments:   - FIPS202_UINT64 *s_inc: pointer to input/output incremental
+ * state First 25 values represent Keccak state. 26th value represents either
+ * the number of absorbed bytes that have not been permuted, or not-yet-squeezed
+ * bytes.
  **************************************************/
-static void keccak_inc_init(uint64_t* s_inc) {
-    __builtin_memset(s_inc, 0, 26 * sizeof(uint64_t));
+static void keccak_inc_init(FIPS202_UINT64* s_inc) {
+    __builtin_memset(s_inc, 0, 26 * sizeof(FIPS202_UINT64));
 }
 
 /*************************************************
@@ -414,27 +413,27 @@ static void keccak_inc_init(uint64_t* s_inc) {
  * Description: Incremental keccak absorb
  *              Preceded by keccak_inc_init, succeeded by keccak_inc_finalize
  *
- * Arguments:   - uint64_t *s_inc: pointer to input/output incremental state
- *                First 25 values represent Keccak state.
- *                26th value represents either the number of absorbed bytes
- *                that have not been permuted, or not-yet-squeezed bytes.
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
- *              - const uint8_t *m: pointer to input to be absorbed into s
- *              - size_t mlen: length of input in bytes
+ * Arguments:   - FIPS202_UINT64 *s_inc: pointer to input/output incremental
+ * state First 25 values represent Keccak state. 26th value represents either
+ * the number of absorbed bytes that have not been permuted, or not-yet-squeezed
+ * bytes.
+ *              - FIPS202_UINT32 r: rate in bytes (e.g., 168 for SHAKE128)
+ *              - const FIPS202_UINT8 *m: pointer to input to be absorbed into s
+ *              - FIPS202_SIZE_T mlen: length of input in bytes
  **************************************************/
-static void keccak_inc_absorb(uint64_t* s_inc, uint32_t r, const uint8_t* m,
-                              size_t mlen) {
-    size_t i;
+static void keccak_inc_absorb(FIPS202_UINT64* s_inc, FIPS202_UINT32 r,
+                              const FIPS202_UINT8* m, FIPS202_SIZE_T mlen) {
+    FIPS202_SIZE_T i;
 
     /* Recall that s_inc[25] is the non-absorbed bytes xored into the state */
     while (mlen + s_inc[25] >= r) {
         for (i = 0; i < r - s_inc[25]; i++) {
             /* Take the i'th byte from message
                xor with the s_inc[25] + i'th byte of the state; little-endian */
-            s_inc[(s_inc[25] + i) >> 3] ^= (uint64_t)m[i]
+            s_inc[(s_inc[25] + i) >> 3] ^= (FIPS202_UINT64)m[i]
                                            << (8 * ((s_inc[25] + i) & 0x07));
         }
-        mlen -= (size_t)(r - s_inc[25]);
+        mlen -= (FIPS202_SIZE_T)(r - s_inc[25]);
         m += r - s_inc[25];
         s_inc[25] = 0;
 
@@ -442,7 +441,7 @@ static void keccak_inc_absorb(uint64_t* s_inc, uint32_t r, const uint8_t* m,
     }
 
     for (i = 0; i < mlen; i++) {
-        s_inc[(s_inc[25] + i) >> 3] ^= (uint64_t)m[i]
+        s_inc[(s_inc[25] + i) >> 3] ^= (FIPS202_UINT64)m[i]
                                        << (8 * ((s_inc[25] + i) & 0x07));
     }
     s_inc[25] += mlen;
@@ -453,19 +452,20 @@ static void keccak_inc_absorb(uint64_t* s_inc, uint32_t r, const uint8_t* m,
  *
  * Description: Finalizes Keccak absorb phase, prepares for squeezing
  *
- * Arguments:   - uint64_t *s_inc: pointer to input/output incremental state
- *                First 25 values represent Keccak state.
- *                26th value represents either the number of absorbed bytes
- *                that have not been permuted, or not-yet-squeezed bytes.
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
- *              - uint8_t p: domain-separation byte for different
+ * Arguments:   - FIPS202_UINT64 *s_inc: pointer to input/output incremental
+ * state First 25 values represent Keccak state. 26th value represents either
+ * the number of absorbed bytes that have not been permuted, or not-yet-squeezed
+ * bytes.
+ *              - FIPS202_UINT32 r: rate in bytes (e.g., 168 for SHAKE128)
+ *              - FIPS202_UINT8 p: domain-separation byte for different
  *                                 Keccak-derived functions
  **************************************************/
-static void keccak_inc_finalize(uint64_t* s_inc, uint32_t r, uint8_t p) {
+static void keccak_inc_finalize(FIPS202_UINT64* s_inc, FIPS202_UINT32 r,
+                                FIPS202_UINT8 p) {
     /* After keccak_inc_absorb, we are guaranteed that s_inc[25] < r,
        so we can always use one more byte for p in the current state. */
-    s_inc[s_inc[25] >> 3] ^= (uint64_t)p << (8 * (s_inc[25] & 0x07));
-    s_inc[(r - 1) >> 3] ^= (uint64_t)128 << (8 * ((r - 1) & 0x07));
+    s_inc[s_inc[25] >> 3] ^= (FIPS202_UINT64)p << (8 * (s_inc[25] & 0x07));
+    s_inc[(r - 1) >> 3] ^= (FIPS202_UINT64)128 << (8 * ((r - 1) & 0x07));
     s_inc[25] = 0;
 }
 
@@ -474,24 +474,24 @@ static void keccak_inc_finalize(uint64_t* s_inc, uint32_t r, uint8_t p) {
  *
  * Description: Incremental Keccak squeeze; can be called on byte-level
  *
- * Arguments:   - uint8_t *h: pointer to output bytes
- *              - size_t outlen: number of bytes to be squeezed
- *              - uint64_t *s_inc: pointer to input/output incremental state
- *                First 25 values represent Keccak state.
- *                26th value represents either the number of absorbed bytes
- *                that have not been permuted, or not-yet-squeezed bytes.
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
+ * Arguments:   - FIPS202_UINT8 *h: pointer to output bytes
+ *              - FIPS202_SIZE_T outlen: number of bytes to be squeezed
+ *              - FIPS202_UINT64 *s_inc: pointer to input/output incremental
+ * state First 25 values represent Keccak state. 26th value represents either
+ * the number of absorbed bytes that have not been permuted, or not-yet-squeezed
+ * bytes.
+ *              - FIPS202_UINT32 r: rate in bytes (e.g., 168 for SHAKE128)
  **************************************************/
-static void keccak_inc_squeeze(uint8_t* h, size_t outlen, uint64_t* s_inc,
-                               uint32_t r) {
-    size_t i;
+static void keccak_inc_squeeze(FIPS202_UINT8* h, FIPS202_SIZE_T outlen,
+                               FIPS202_UINT64* s_inc, FIPS202_UINT32 r) {
+    FIPS202_SIZE_T i;
 
     /* First consume any bytes we still have sitting around */
     for (i = 0; i < outlen && i < s_inc[25]; i++) {
         /* There are s_inc[25] bytes left, so r - s_inc[25] is the first
            available byte. We consume from there, i.e., up to r. */
-        h[i] = (uint8_t)(s_inc[(r - s_inc[25] + i) >> 3] >>
-                         (8 * ((r - s_inc[25] + i) & 0x07)));
+        h[i] = (FIPS202_UINT8)(s_inc[(r - s_inc[25] + i) >> 3] >>
+                               (8 * ((r - s_inc[25] + i) & 0x07)));
     }
     h += i;
     outlen -= i;
@@ -502,7 +502,7 @@ static void keccak_inc_squeeze(uint8_t* h, size_t outlen, uint64_t* s_inc,
         KeccakF1600_StatePermute(s_inc);
 
         for (i = 0; i < outlen && i < r; i++) {
-            h[i] = (uint8_t)(s_inc[i >> 3] >> (8 * (i & 0x07)));
+            h[i] = (FIPS202_UINT8)(s_inc[i >> 3] >> (8 * (i & 0x07)));
         }
         h += i;
         outlen -= i;
@@ -510,17 +510,19 @@ static void keccak_inc_squeeze(uint8_t* h, size_t outlen, uint64_t* s_inc,
     }
 }
 
-void shake128_inc_init(uint64_t* s_inc) { keccak_inc_init(s_inc); }
+void shake128_inc_init(FIPS202_UINT64* s_inc) { keccak_inc_init(s_inc); }
 
-void shake128_inc_absorb(uint64_t* s_inc, const uint8_t* input, size_t inlen) {
+void shake128_inc_absorb(FIPS202_UINT64* s_inc, const FIPS202_UINT8* input,
+                         FIPS202_SIZE_T inlen) {
     keccak_inc_absorb(s_inc, SHAKE128_RATE, input, inlen);
 }
 
-void shake128_inc_finalize(uint64_t* s_inc) {
+void shake128_inc_finalize(FIPS202_UINT64* s_inc) {
     keccak_inc_finalize(s_inc, SHAKE128_RATE, 0x1F);
 }
 
-void shake128_inc_squeeze(uint8_t* output, size_t outlen, uint64_t* s_inc) {
+void shake128_inc_squeeze(FIPS202_UINT8* output, FIPS202_SIZE_T outlen,
+                          FIPS202_UINT64* s_inc) {
     keccak_inc_squeeze(output, outlen, s_inc, SHAKE128_RATE);
 }
 
@@ -530,12 +532,14 @@ void shake128_inc_squeeze(uint8_t* output, size_t outlen, uint64_t* s_inc) {
  * Description: Absorb step of the SHAKE128 XOF.
  *              non-incremental, starts by zeroeing the state.
  *
- * Arguments:   - uint64_t *s: pointer to (uninitialized) output Keccak state
- *              - const uint8_t *input: pointer to input to be absorbed
+ * Arguments:   - FIPS202_UINT64 *s: pointer to (uninitialized) output Keccak
+ * state
+ *              - const FIPS202_UINT8 *input: pointer to input to be absorbed
  *                                            into s
- *              - size_t inlen: length of input in bytes
+ *              - FIPS202_SIZE_T inlen: length of input in bytes
  **************************************************/
-void shake128_absorb(uint64_t* s, const uint8_t* input, size_t inlen) {
+void shake128_absorb(FIPS202_UINT64* s, const FIPS202_UINT8* input,
+                     FIPS202_SIZE_T inlen) {
     keccak_absorb(s, SHAKE128_RATE, input, inlen, 0x1F);
 }
 
@@ -546,12 +550,13 @@ void shake128_absorb(uint64_t* s, const uint8_t* input, size_t inlen) {
  *              SHAKE128_RATE bytes each. Modifies the state. Can be called
  *              multiple times to keep squeezing, i.e., is incremental.
  *
- * Arguments:   - uint8_t *output: pointer to output blocks
- *              - size_t nblocks: number of blocks to be squeezed
+ * Arguments:   - FIPS202_UINT8 *output: pointer to output blocks
+ *              - FIPS202_SIZE_T nblocks: number of blocks to be squeezed
  *                                (written to output)
- *              - uint64_t *s: pointer to input/output Keccak state
+ *              - FIPS202_UINT64 *s: pointer to input/output Keccak state
  **************************************************/
-void shake128_squeezeblocks(uint8_t* output, size_t nblocks, uint64_t* s) {
+void shake128_squeezeblocks(FIPS202_UINT8* output, FIPS202_SIZE_T nblocks,
+                            FIPS202_UINT64* s) {
     keccak_squeezeblocks(output, nblocks, s, SHAKE128_RATE);
 }
 
@@ -560,16 +565,16 @@ void shake128_squeezeblocks(uint8_t* output, size_t nblocks, uint64_t* s) {
  *
  * Description: SHAKE128 XOF with non-incremental API
  *
- * Arguments:   - uint8_t *output: pointer to output
- *              - size_t outlen: requested output length in bytes
- *              - const uint8_t *input: pointer to input
- *              - size_t inlen: length of input in bytes
+ * Arguments:   - FIPS202_UINT8 *output: pointer to output
+ *              - FIPS202_SIZE_T outlen: requested output length in bytes
+ *              - const FIPS202_UINT8 *input: pointer to input
+ *              - FIPS202_SIZE_T inlen: length of input in bytes
  **************************************************/
-void shake128(uint8_t* output, size_t outlen, const uint8_t* input,
-              size_t inlen) {
-    size_t nblocks = outlen / SHAKE128_RATE;
-    uint8_t t[SHAKE128_RATE];
-    uint64_t s[25];
+void shake128(FIPS202_UINT8* output, FIPS202_SIZE_T outlen,
+              const FIPS202_UINT8* input, FIPS202_SIZE_T inlen) {
+    FIPS202_SIZE_T nblocks = outlen / SHAKE128_RATE;
+    FIPS202_UINT8 t[SHAKE128_RATE];
+    FIPS202_UINT64 s[25];
 
     shake128_absorb(s, input, inlen);
     shake128_squeezeblocks(output, nblocks, s);
@@ -583,17 +588,19 @@ void shake128(uint8_t* output, size_t outlen, const uint8_t* input,
     }
 }
 
-void shake256_inc_init(uint64_t* s_inc) { keccak_inc_init(s_inc); }
+void shake256_inc_init(FIPS202_UINT64* s_inc) { keccak_inc_init(s_inc); }
 
-void shake256_inc_absorb(uint64_t* s_inc, const uint8_t* input, size_t inlen) {
+void shake256_inc_absorb(FIPS202_UINT64* s_inc, const FIPS202_UINT8* input,
+                         FIPS202_SIZE_T inlen) {
     keccak_inc_absorb(s_inc, SHAKE256_RATE, input, inlen);
 }
 
-void shake256_inc_finalize(uint64_t* s_inc) {
+void shake256_inc_finalize(FIPS202_UINT64* s_inc) {
     keccak_inc_finalize(s_inc, SHAKE256_RATE, 0x1F);
 }
 
-void shake256_inc_squeeze(uint8_t* output, size_t outlen, uint64_t* s_inc) {
+void shake256_inc_squeeze(FIPS202_UINT8* output, FIPS202_SIZE_T outlen,
+                          FIPS202_UINT64* s_inc) {
     keccak_inc_squeeze(output, outlen, s_inc, SHAKE256_RATE);
 }
 
@@ -603,12 +610,14 @@ void shake256_inc_squeeze(uint8_t* output, size_t outlen, uint64_t* s_inc) {
  * Description: Absorb step of the SHAKE256 XOF.
  *              non-incremental, starts by zeroeing the state.
  *
- * Arguments:   - uint64_t *s: pointer to (uninitialized) output Keccak state
- *              - const uint8_t *input: pointer to input to be absorbed
+ * Arguments:   - FIPS202_UINT64 *s: pointer to (uninitialized) output Keccak
+ * state
+ *              - const FIPS202_UINT8 *input: pointer to input to be absorbed
  *                                            into s
- *              - size_t inlen: length of input in bytes
+ *              - FIPS202_SIZE_T inlen: length of input in bytes
  **************************************************/
-void shake256_absorb(uint64_t* s, const uint8_t* input, size_t inlen) {
+void shake256_absorb(FIPS202_UINT64* s, const FIPS202_UINT8* input,
+                     FIPS202_SIZE_T inlen) {
     keccak_absorb(s, SHAKE256_RATE, input, inlen, 0x1F);
 }
 
@@ -619,12 +628,13 @@ void shake256_absorb(uint64_t* s, const uint8_t* input, size_t inlen) {
  *              SHAKE256_RATE bytes each. Modifies the state. Can be called
  *              multiple times to keep squeezing, i.e., is incremental.
  *
- * Arguments:   - uint8_t *output: pointer to output blocks
- *              - size_t nblocks: number of blocks to be squeezed
+ * Arguments:   - FIPS202_UINT8 *output: pointer to output blocks
+ *              - FIPS202_SIZE_T nblocks: number of blocks to be squeezed
  *                                (written to output)
- *              - uint64_t *s: pointer to input/output Keccak state
+ *              - FIPS202_UINT64 *s: pointer to input/output Keccak state
  **************************************************/
-void shake256_squeezeblocks(uint8_t* output, size_t nblocks, uint64_t* s) {
+void shake256_squeezeblocks(FIPS202_UINT8* output, FIPS202_SIZE_T nblocks,
+                            FIPS202_UINT64* s) {
     keccak_squeezeblocks(output, nblocks, s, SHAKE256_RATE);
 }
 
@@ -633,16 +643,16 @@ void shake256_squeezeblocks(uint8_t* output, size_t nblocks, uint64_t* s) {
  *
  * Description: SHAKE256 XOF with non-incremental API
  *
- * Arguments:   - uint8_t *output: pointer to output
- *              - size_t outlen: requested output length in bytes
- *              - const uint8_t *input: pointer to input
- *              - size_t inlen: length of input in bytes
+ * Arguments:   - FIPS202_UINT8 *output: pointer to output
+ *              - FIPS202_SIZE_T outlen: requested output length in bytes
+ *              - const FIPS202_UINT8 *input: pointer to input
+ *              - FIPS202_SIZE_T inlen: length of input in bytes
  **************************************************/
-void shake256(uint8_t* output, size_t outlen, const uint8_t* input,
-              size_t inlen) {
-    size_t nblocks = outlen / SHAKE256_RATE;
-    uint8_t t[SHAKE256_RATE];
-    uint64_t s[25];
+void shake256(FIPS202_UINT8* output, FIPS202_SIZE_T outlen,
+              const FIPS202_UINT8* input, FIPS202_SIZE_T inlen) {
+    FIPS202_SIZE_T nblocks = outlen / SHAKE256_RATE;
+    FIPS202_UINT8 t[SHAKE256_RATE];
+    FIPS202_UINT64 s[25];
 
     shake256_absorb(s, input, inlen);
     shake256_squeezeblocks(output, nblocks, s);
