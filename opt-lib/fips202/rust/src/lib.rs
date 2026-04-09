@@ -11,10 +11,12 @@ mod ffi {
     use core::ffi::c_uchar;
 
     extern "C" {
+        pub fn shake128_squeezeblocks(output: *mut c_uchar, nblocks: usize, s: *mut u64);
         pub fn shake128_inc_absorb(s_inc: *mut u64, input: *const c_uchar, inlen: usize);
         pub fn shake128_inc_finalize(s_inc: *mut u64);
         pub fn shake128_inc_squeeze(output: *mut c_uchar, outlen: usize, s_inc: *mut u64);
 
+        pub fn shake256_squeezeblocks(output: *mut c_uchar, nblocks: usize, s: *mut u64);
         pub fn shake256_inc_absorb(s_inc: *mut u64, input: *const c_uchar, inlen: usize);
         pub fn shake256_inc_finalize(s_inc: *mut u64);
         pub fn shake256_inc_squeeze(output: *mut c_uchar, outlen: usize, s_inc: *mut u64);
@@ -54,6 +56,16 @@ impl Shake128 {
             ffi::shake128_inc_squeeze(output.as_mut_ptr(), output.len(), self.state.as_mut_ptr());
         }
     }
+
+    /// Squeezes full SHAKE128 blocks from the finalized state. Output length must be a multiple
+    /// of SHAKE128_RATE (168 bytes). Must not be called after squeeze().
+    pub fn squeeze_blocks(&mut self, output: &mut [u8]) {
+        debug_assert_eq!(output.len() % SHAKE128_RATE, 0);
+        debug_assert_eq!(self.state[25], 0);
+        unsafe {
+            ffi::shake128_squeezeblocks(output.as_mut_ptr(), output.len() / SHAKE128_RATE, self.state.as_mut_ptr());
+        }
+    }
 }
 
 /// SHAKE256 hasher.
@@ -87,6 +99,16 @@ impl Shake256 {
     pub fn squeeze(&mut self, output: &mut [u8]) {
         unsafe {
             ffi::shake256_inc_squeeze(output.as_mut_ptr(), output.len(), self.state.as_mut_ptr());
+        }
+    }
+
+    /// Squeezes full SHAKE256 blocks from the finalized state. Output length must be a multiple
+    /// of SHAKE256_RATE (136 bytes). Must not be called after squeeze().
+    pub fn squeeze_blocks(&mut self, output: &mut [u8]) {
+        debug_assert_eq!(output.len() % SHAKE256_RATE, 0);
+        debug_assert_eq!(self.state[25], 0);
+        unsafe {
+            ffi::shake256_squeezeblocks(output.as_mut_ptr(), output.len() / SHAKE256_RATE, self.state.as_mut_ptr());
         }
     }
 }
