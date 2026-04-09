@@ -2,7 +2,7 @@
 #![no_main]
 
 use core::arch::asm;
-use sha3::{digest::{Update, ExtendableOutput, XofReader}};
+use sha3::digest::{ExtendableOutput, Update, XofReader};
 
 fn exit(code: i8) -> ! {
     unsafe {
