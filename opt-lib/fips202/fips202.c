@@ -380,6 +380,7 @@ static void keccak_squeezeblocks(FIPS202_UINT8* h, FIPS202_SIZE_T nblocks,
                                  FIPS202_UINT64* s, FIPS202_UINT32 r) {
     while (nblocks > 0) {
         KeccakF1600_StatePermute(s);
+#pragma GCC unroll 21
         for (FIPS202_SIZE_T i = 0; i < (r >> 3); i++) {
             store64(h + 8 * i, s[i]);
         }
