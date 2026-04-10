@@ -8,11 +8,11 @@ The project we compared is [sha3](https://crates.io/crates/sha3).
 
 ```sh
 # Shake128
-$ cargo run --release --example ckb_opt_fips202_shake128 # All cycles: 188532058(179.8M)
+$ cargo run --release --example ckb_opt_fips202_shake128 # All cycles: 153856501(146.7M)
 $ cargo run --release --example sha3_shake128            # All cycles: 496003644(473.0M)
 
 # Shake256
-$ cargo run --release --example ckb_opt_fips202_shake256 # All cycles: 188532067(179.8M)
+$ cargo run --release --example ckb_opt_fips202_shake256 # All cycles: 153856510(146.7M)
 $ cargo run --release --example sha3_shake256            # All cycles: 487403648(464.8M)
 ```
 
