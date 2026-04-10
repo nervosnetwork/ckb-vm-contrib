@@ -43,6 +43,11 @@ impl Shake128 {
         }
     }
 
+    /// Updates the hasher with more input bytes. Equivalent to calling `absorb()`.
+    pub fn update(&mut self, data: &[u8]) {
+        self.absorb(data);
+    }
+
     /// Finalizes the absorb phase, preparing the state for squeezing.
     pub fn finalize(&mut self) {
         unsafe {
@@ -86,6 +91,11 @@ impl Shake256 {
         unsafe {
             ffi::shake256_inc_absorb(self.state.as_mut_ptr(), data.as_ptr(), data.len());
         }
+    }
+
+    /// Updates the hasher with more input bytes. Equivalent to calling `absorb()`.
+    pub fn update(&mut self, data: &[u8]) {
+        self.absorb(data);
     }
 
     /// Finalizes the absorb phase, preparing the state for squeezing.
