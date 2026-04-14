@@ -1,6 +1,6 @@
 [package]
 name = "ckb-opt-fips202"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 license = "MIT"
 description = "Optimized FIPS202 (SHAKE256) implementation for CKB-VM with Rust bindings"
