@@ -661,3 +661,81 @@ void shake256(FIPS202_UINT8* output, FIPS202_SIZE_T outlen,
         __builtin_memcpy(output, t, outlen);
     }
 }
+
+void sha3_256_inc_init(FIPS202_UINT64* s_inc) { keccak_inc_init(s_inc); }
+
+void sha3_256_inc_absorb(FIPS202_UINT64* s_inc, const FIPS202_UINT8* input,
+                         FIPS202_SIZE_T inlen) {
+    keccak_inc_absorb(s_inc, SHA3_256_RATE, input, inlen);
+}
+
+void sha3_256_inc_finalize(FIPS202_UINT8* output, FIPS202_UINT64* s_inc) {
+    FIPS202_UINT8 t[SHA3_256_RATE];
+    keccak_inc_finalize(s_inc, SHA3_256_RATE, 0x06);
+    KeccakF1600_StatePermute(s_inc);
+    for (FIPS202_SIZE_T i = 0; i < 32; i++) {
+        t[i] = (FIPS202_UINT8)(s_inc[i >> 3] >> (8 * (i & 0x07)));
+    }
+    __builtin_memcpy(output, t, 32);
+}
+
+/*************************************************
+ * Name:        sha3_256
+ *
+ * Description: SHA3-256 with non-incremental API
+ *
+ * Arguments:   - FIPS202_UINT8 *output: pointer to output (32 bytes)
+ *              - const FIPS202_UINT8 *input: pointer to input
+ *              - FIPS202_SIZE_T inlen: length of input in bytes
+ **************************************************/
+void sha3_256(FIPS202_UINT8* output, const FIPS202_UINT8* input,
+              FIPS202_SIZE_T inlen) {
+    FIPS202_UINT64 s[25];
+    FIPS202_UINT8 t[SHA3_256_RATE];
+
+    keccak_absorb(s, SHA3_256_RATE, input, inlen, 0x06);
+    KeccakF1600_StatePermute(s);
+    for (FIPS202_SIZE_T i = 0; i < 32; i++) {
+        t[i] = (FIPS202_UINT8)(s[i >> 3] >> (8 * (i & 0x07)));
+    }
+    __builtin_memcpy(output, t, 32);
+}
+
+void sha3_512_inc_init(FIPS202_UINT64* s_inc) { keccak_inc_init(s_inc); }
+
+void sha3_512_inc_absorb(FIPS202_UINT64* s_inc, const FIPS202_UINT8* input,
+                         FIPS202_SIZE_T inlen) {
+    keccak_inc_absorb(s_inc, SHA3_512_RATE, input, inlen);
+}
+
+void sha3_512_inc_finalize(FIPS202_UINT8* output, FIPS202_UINT64* s_inc) {
+    FIPS202_UINT8 t[SHA3_512_RATE];
+    keccak_inc_finalize(s_inc, SHA3_512_RATE, 0x06);
+    KeccakF1600_StatePermute(s_inc);
+    for (FIPS202_SIZE_T i = 0; i < 64; i++) {
+        t[i] = (FIPS202_UINT8)(s_inc[i >> 3] >> (8 * (i & 0x07)));
+    }
+    __builtin_memcpy(output, t, 64);
+}
+
+/*************************************************
+ * Name:        sha3_512
+ *
+ * Description: SHA3-512 with non-incremental API
+ *
+ * Arguments:   - FIPS202_UINT8 *output: pointer to output (64 bytes)
+ *              - const FIPS202_UINT8 *input: pointer to input
+ *              - FIPS202_SIZE_T inlen: length of input in bytes
+ **************************************************/
+void sha3_512(FIPS202_UINT8* output, const FIPS202_UINT8* input,
+              FIPS202_SIZE_T inlen) {
+    FIPS202_UINT64 s[25];
+    FIPS202_UINT8 t[SHA3_512_RATE];
+
+    keccak_absorb(s, SHA3_512_RATE, input, inlen, 0x06);
+    KeccakF1600_StatePermute(s);
+    for (FIPS202_SIZE_T i = 0; i < 64; i++) {
+        t[i] = (FIPS202_UINT8)(s[i >> 3] >> (8 * (i & 0x07)));
+    }
+    __builtin_memcpy(output, t, 64);
+}

@@ -1,11 +1,13 @@
-//! Optimized SHAKE128/SHAKE256 implementation for CKB-VM with Rust bindings.
+//! Optimized SHAKE128/SHAKE256/SHA3-256/SHA3-512 implementation for CKB-VM with Rust bindings.
 //!
-//! This crate exposes minimal APIs around SHAKE128 and SHAKE256 absorb/squeeze operations.
+//! This crate exposes minimal APIs around SHAKE128, SHAKE256, SHA3-256 and SHA3-512 operations.
 
 #![no_std]
 
 pub const SHAKE128_RATE: usize = 168;
 pub const SHAKE256_RATE: usize = 136;
+pub const SHA3_256_RATE: usize = 136;
+pub const SHA3_512_RATE: usize = 72;
 
 mod ffi {
     use core::ffi::c_uchar;
@@ -20,6 +22,12 @@ mod ffi {
         pub fn shake256_inc_absorb(s_inc: *mut u64, input: *const c_uchar, inlen: usize);
         pub fn shake256_inc_finalize(s_inc: *mut u64);
         pub fn shake256_inc_squeeze(output: *mut c_uchar, outlen: usize, s_inc: *mut u64);
+
+        pub fn sha3_256_inc_absorb(s_inc: *mut u64, input: *const c_uchar, inlen: usize);
+        pub fn sha3_256_inc_finalize(output: *mut c_uchar, s_inc: *mut u64);
+
+        pub fn sha3_512_inc_absorb(s_inc: *mut u64, input: *const c_uchar, inlen: usize);
+        pub fn sha3_512_inc_finalize(output: *mut c_uchar, s_inc: *mut u64);
     }
 }
 
@@ -119,6 +127,62 @@ impl Shake256 {
         debug_assert_eq!(self.state[25], 0);
         unsafe {
             ffi::shake256_squeezeblocks(output.as_mut_ptr(), output.len() / SHAKE256_RATE, self.state.as_mut_ptr());
+        }
+    }
+}
+
+/// SHA3-256 hasher.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct Sha3_256 {
+    state: [u64; 26],
+}
+
+impl Sha3_256 {
+    /// Creates a new SHA3-256 hasher instance.
+    #[inline]
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// Updates input bytes into the hasher state.
+    pub fn update(&mut self, data: &[u8]) {
+        unsafe {
+            ffi::sha3_256_inc_absorb(self.state.as_mut_ptr(), data.as_ptr(), data.len());
+        }
+    }
+
+    /// Finalizes the hash and writes the 32-byte digest to `output`.
+    pub fn finalize(mut self, output: &mut [u8; 32]) {
+        unsafe {
+            ffi::sha3_256_inc_finalize(output.as_mut_ptr(), self.state.as_mut_ptr());
+        }
+    }
+}
+
+/// SHA3-512 hasher.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct Sha3_512 {
+    state: [u64; 26],
+}
+
+impl Sha3_512 {
+    /// Creates a new SHA3-512 hasher instance.
+    #[inline]
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// Updates input bytes into the hasher state.
+    pub fn update(&mut self, data: &[u8]) {
+        unsafe {
+            ffi::sha3_512_inc_absorb(self.state.as_mut_ptr(), data.as_ptr(), data.len());
+        }
+    }
+
+    /// Finalizes the hash and writes the 64-byte digest to `output`.
+    pub fn finalize(mut self, output: &mut [u8; 64]) {
+        unsafe {
+            ffi::sha3_512_inc_finalize(output.as_mut_ptr(), self.state.as_mut_ptr());
         }
     }
 }

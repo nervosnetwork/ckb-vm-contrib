@@ -9,3 +9,5 @@ This folder contains an optimized implementation of FIPS202 for CKB-VM. The orig
 
 - shake128
 - shake256
+- sha3_256
+- sha3_512
