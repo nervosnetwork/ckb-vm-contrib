@@ -5,7 +5,7 @@ fn main() {
 
     let mut builder = cc::Build::new();
     builder.compiler(clang_finder::find());
-    builder.file("src/fips202.c").include("src").opt_level(3).flag("-flto");
+    builder.file("src/fips202.c").include("src").opt_level(3);
     if target.contains("riscv64") {
         builder.flag("-march=rv64imc_zba_zbb_zbc_zbs");
     }
