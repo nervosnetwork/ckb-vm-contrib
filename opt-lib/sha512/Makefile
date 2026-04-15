@@ -1,5 +1,9 @@
-CC = clang-19
-LD = ld.lld-19
+CLANG_VERSION ?= 19
+CLANG = clang-$(CLANG_VERSION)
+CLANG_FORMAT = clang-format-$(CLANG_VERSION)
+LD = ld.lld-$(CLANG_VERSION)
+LLVM_OBJDUMP = llvm-objdump-$(CLANG_VERSION)
+LLVM_STRIP = llvm-strip-$(CLANG_VERSION)
 
 # -flto enables Link Time Optimization for better cross-module optimization (~4% cycle reduction)
 # May increase compile time and can occasionally cause issues with specific toolchain configurations
@@ -14,17 +18,17 @@ LDFLAGS = -static --gc-sections -L../../deps/musl/release/lib -L../../deps/compi
 		-lc -lgcc -lcompiler-rt
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CLANG) $(CFLAGS) -c -o $@ $<
 
 all: main.o sha512.o
 	$(LD) $(LDFLAGS) -o main $^
-	llvm-strip -s main
+	$(LLVM_STRIP) -s main
 
 run:
 	ckb-debugger --bin main
 
 asm: sha512.o
-	llvm-objdump-19 -d -S sha512.o
+	$(LLVM_OBJDUMP) -d -S sha512.o
 
 fmt:
 	clang-format --style="{BasedOnStyle: Google, IndentWidth: 4}" -i *.c *.h

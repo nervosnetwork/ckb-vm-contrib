@@ -20,18 +20,18 @@ LDFLAGS = -static --gc-sections -L../../deps/musl/release/lib -L../../deps/compi
 %.o: %.c
 	$(CLANG) $(CFLAGS) -c -o $@ $<
 
-all: main.o sha256.o
+all: main.o fips202.o
 	$(LD) $(LDFLAGS) -o main $^
 	$(LLVM_STRIP) -s main
 
 run:
 	ckb-debugger --bin main
 
-asm: sha256.o
-	$(LLVM_OBJDUMP) -d -S sha256.o
+asm: fips202.o
+	$(LLVM_OBJDUMP) -d -S fips202.o
 
 fmt:
 	$(CLANG_FORMAT) --style="{BasedOnStyle: Google, IndentWidth: 4}" -i *.c *.h
 
 clean:
-	rm -f main.o sha256.o main
+	rm -f main.o fips202.o main
