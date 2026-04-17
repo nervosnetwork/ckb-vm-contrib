@@ -6,17 +6,17 @@ pub use ckb_vm_differential_protocol as protocol;
 pub use proptest;
 
 pub mod executor;
+pub mod guest_build;
 pub use executor::OneShot;
+pub use guest_build::{BuildConfig, build_guest_crate, build_guest_crate_with};
 
-/// Pairs a host-side reference implementation with a ckb-vm guest ELF that
-/// exercises the ported implementation. Implement once per library.
 pub trait Harness: 'static {
     type Input: serde::Serialize + serde::de::DeserializeOwned + Clone + Debug + 'static;
     type Output: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static;
 
-    const GUEST_ELF: &'static [u8];
     const MAX_PAYLOAD_LEN: usize = protocol::DEFAULT_MAX_PAYLOAD_LEN;
 
+    fn guest_elf() -> &'static [u8];
     fn reference(input: &Self::Input) -> Self::Output;
 }
 
@@ -36,6 +36,9 @@ pub enum DivergenceError {
 
     #[error("payload exceeds MAX_PAYLOAD_LEN ({limit} bytes): saw {actual}")]
     PayloadTooLarge { limit: usize, actual: usize },
+
+    #[error("guest build failed: {0}")]
+    Build(String),
 }
 
 pub trait Executor<H: Harness> {
