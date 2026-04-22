@@ -660,6 +660,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ckb-vm-differential"
+version = "1.1.1"
+dependencies = [
+ "ckb-vm-differential-guest",
+ "ckb-vm-differential-host",
+ "ckb-vm-differential-protocol",
+]
+
+[[package]]
 name = "ckb-vm-differential-guest"
 version = "1.1.1"
 dependencies = [
