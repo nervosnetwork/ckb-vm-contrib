@@ -1,0 +1,33 @@
+[package]
+name = "sha256_differential"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+
+[features]
+default = []
+__guest = []
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "sha256_differential"
+path = "src/lib.rs"
+required-features = ["__guest"]
+
+[[test]]
+name = "proptest"
+path = "tests/proptest.rs"
+
+[dependencies]
+ckb-vm-differential = { path = "../../../../ckb-vm-differential", version = "1.1.1" }
+
+[target.'cfg(not(target_arch = "riscv64"))'.dependencies]
+sha2 = "0.10"
+proptest = "1.5"
+
+[target.'cfg(target_arch = "riscv64")'.dependencies]
+ckb-opt-sha256 = { path = "../../../../opt-lib/sha256/rust", version = "0.1.0" }
+ckb-std = "0.17"
