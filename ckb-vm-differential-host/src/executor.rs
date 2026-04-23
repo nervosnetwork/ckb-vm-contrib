@@ -13,6 +13,7 @@ use crate::{DivergenceError, Executor, Harness};
 
 type Payload = Vec<u8>;
 type OutputSlot = Arc<Mutex<Option<Payload>>>;
+type PanicSlot = Arc<Mutex<Option<String>>>;
 
 /// Boots a fresh ckb-vm for every input
 pub struct OneShot<H: Harness> {
@@ -49,7 +50,7 @@ impl<H: Harness> OneShot<H> {
             return Err(DivergenceError::PayloadTooLarge { limit: H::MAX_PAYLOAD_LEN, actual: input_bytes.len() });
         }
 
-        let (syscalls, output_slot) = DifferentialSyscalls::new(input_bytes, H::MAX_PAYLOAD_LEN);
+        let (syscalls, output_slot, panic_slot) = DifferentialSyscalls::new(input_bytes, H::MAX_PAYLOAD_LEN);
 
         let core = DefaultCoreMachine::<u64, SparseMemory<u64>>::new(
             ckb_vm::ISA_IMC | ckb_vm::ISA_B | ckb_vm::ISA_A | ckb_vm::ISA_MOP,
@@ -65,6 +66,11 @@ impl<H: Harness> OneShot<H> {
         machine.load_program(&elf, std::iter::empty::<Result<Bytes, VmError>>())?;
 
         let exit_code = machine.run()?;
+
+        // Panic takes priority over normal output
+        if let Some(message) = panic_slot.lock().expect("panic slot poisoned").take() {
+            return Err(DivergenceError::GuestPanicked { message });
+        }
 
         let output_bytes =
             output_slot.lock().expect("output slot poisoned").take().ok_or_else(|| DivergenceError::GuestExited {
@@ -86,15 +92,23 @@ impl<H: Harness> Executor<H> for OneShot<H> {
 pub struct DifferentialSyscalls {
     input_bytes: Payload,
     output_slot: OutputSlot,
+    panic_slot: PanicSlot,
     max_payload: usize,
     ready_count: u32,
 }
 
 impl DifferentialSyscalls {
-    pub fn new(input_bytes: Payload, max_payload: usize) -> (Self, OutputSlot) {
-        let slot: OutputSlot = Arc::new(Mutex::new(None));
-        let this = Self { input_bytes, output_slot: slot.clone(), max_payload, ready_count: 0 };
-        (this, slot)
+    pub fn new(input_bytes: Payload, max_payload: usize) -> (Self, OutputSlot, PanicSlot) {
+        let output_slot: OutputSlot = Arc::new(Mutex::new(None));
+        let panic_slot: PanicSlot = Arc::new(Mutex::new(None));
+        let this = Self {
+            input_bytes,
+            output_slot: output_slot.clone(),
+            panic_slot: panic_slot.clone(),
+            max_payload,
+            ready_count: 0,
+        };
+        (this, output_slot, panic_slot)
     }
 
     pub fn handle_read_input<Mac: SupportMachine>(&self, machine: &mut Mac) -> Result<(), VmError> {
@@ -129,6 +143,17 @@ impl DifferentialSyscalls {
         self.ready_count = self.ready_count.saturating_add(1);
         Ok(())
     }
+
+    pub fn handle_panic<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), VmError> {
+        let buf_addr = machine.registers()[A0].to_u64();
+        let len = machine.registers()[A1].to_u64() as usize;
+        let len = len.min(self.max_payload);
+        let bytes = machine.memory_mut().load_bytes(buf_addr, len as u64)?;
+        let message = String::from_utf8_lossy(&bytes).into_owned();
+        *self.panic_slot.lock().expect("panic slot poisoned") = Some(message);
+        machine.set_running(false);
+        Ok(())
+    }
 }
 
 impl<Mac: SupportMachine> Syscalls<Mac> for DifferentialSyscalls {
@@ -149,6 +174,10 @@ impl<Mac: SupportMachine> Syscalls<Mac> for DifferentialSyscalls {
             }
             protocol::SYSCALL_SIGNAL_READY => {
                 self.handle_signal_ready(machine)?;
+                Ok(true)
+            }
+            protocol::SYSCALL_PANIC => {
+                self.handle_panic(machine)?;
                 Ok(true)
             }
             _ => Ok(false),

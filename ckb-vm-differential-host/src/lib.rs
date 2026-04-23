@@ -28,6 +28,9 @@ pub enum DivergenceError {
     #[error("guest exited early: {reason}")]
     GuestExited { reason: String },
 
+    #[error("guest panicked: {message}")]
+    GuestPanicked { message: String },
+
     #[error("vm error: {0}")]
     Vm(#[from] ckb_vm::Error),
 

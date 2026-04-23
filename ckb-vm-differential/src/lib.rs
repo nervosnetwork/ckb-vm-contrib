@@ -37,11 +37,15 @@ macro_rules! harness {
     ) => {
         /* #region guest-side expansion */
         #[cfg(target_arch = "riscv64")]
-        ::ckb_std::entry!(__ckb_vm_differential_guest_main);
+        extern crate alloc;
 
         // Override by hand-rolling `default_alloc!` at the user-crate level if a particular harness needs more.
         #[cfg(target_arch = "riscv64")]
         ::ckb_std::default_alloc!(16384, 1258306, 64);
+
+        // Boot code + panic handler. Replaces ckb-std's `entry!` so guest panics surface as `GuestPanicked` on the host.
+        #[cfg(target_arch = "riscv64")]
+        $crate::guest::guest_main!(__ckb_vm_differential_guest_main);
 
         #[cfg(target_arch = "riscv64")]
         fn __ckb_vm_differential_guest_main() -> i8 {
