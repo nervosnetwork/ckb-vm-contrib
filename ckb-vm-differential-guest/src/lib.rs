@@ -32,9 +32,11 @@ where
 }
 
 pub fn read_input_raw() -> Vec<u8> {
-    let mut buf: Vec<u8> = Vec::with_capacity(protocol::DEFAULT_MAX_PAYLOAD_LEN);
+    // First call with capacity 0 to probe the required size
+    let needed = unsafe { syscall_read_input(core::ptr::null_mut(), 0) };
+    let mut buf: Vec<u8> = Vec::with_capacity(needed);
     let written = unsafe { syscall_read_input(buf.as_mut_ptr(), buf.capacity()) };
-    assert!(written <= buf.capacity(), "host returned payload larger than capacity");
+    assert_eq!(written, needed, "host changed input size between probe and read");
     unsafe { buf.set_len(written) };
     buf
 }

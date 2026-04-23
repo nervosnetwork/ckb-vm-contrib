@@ -35,18 +35,21 @@ macro_rules! harness {
         reference: $reference:expr,
         build:     $build:expr $(,)?
     ) => {
-        // ---------- guest-side expansion ----------
+        /* #region guest-side expansion */
         #[cfg(target_arch = "riscv64")]
         ::ckb_std::entry!(__ckb_vm_differential_guest_main);
+
+        // Override by hand-rolling `default_alloc!` at the user-crate level if a particular harness needs more.
         #[cfg(target_arch = "riscv64")]
-        ::ckb_std::default_alloc!();
+        ::ckb_std::default_alloc!(16384, 1258306, 64);
 
         #[cfg(target_arch = "riscv64")]
         fn __ckb_vm_differential_guest_main() -> i8 {
             $crate::guest::run(|input: $input| -> $output { ($port)(&input) })
         }
+        /* #endregion */
 
-        // ---------- host-side expansion ----------
+        /* #region host-side expansion */
         #[cfg(not(target_arch = "riscv64"))]
         pub struct $name;
 
@@ -69,6 +72,7 @@ macro_rules! harness {
                 ($reference)(input)
             }
         }
+        /* #endregion */
     };
 }
 

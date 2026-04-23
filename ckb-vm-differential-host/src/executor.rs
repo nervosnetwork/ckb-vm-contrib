@@ -100,14 +100,13 @@ impl DifferentialSyscalls {
     pub fn handle_read_input<Mac: SupportMachine>(&self, machine: &mut Mac) -> Result<(), VmError> {
         let buf_addr = machine.registers()[A0].to_u64();
         let cap = machine.registers()[A1].to_u64() as usize;
-        if self.input_bytes.len() > cap {
-            return Err(VmError::External(format!(
-                "guest buffer capacity {cap} < input payload {}",
-                self.input_bytes.len()
-            )));
+        let len = self.input_bytes.len();
+        // Two-step protocol: when the guest's buffer is large enough, copy the bytes;
+        // otherwise (cap == 0 probe call) just report the required size.
+        if cap >= len {
+            machine.memory_mut().store_bytes(buf_addr, &self.input_bytes)?;
         }
-        machine.memory_mut().store_bytes(buf_addr, &self.input_bytes)?;
-        machine.set_register(A0, Mac::REG::from_u64(self.input_bytes.len() as u64));
+        machine.set_register(A0, Mac::REG::from_u64(len as u64));
         Ok(())
     }
 
