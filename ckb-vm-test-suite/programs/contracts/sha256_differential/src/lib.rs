@@ -1,9 +1,8 @@
 #![cfg_attr(target_arch = "riscv64", no_std)]
 #![cfg_attr(target_arch = "riscv64", no_main)]
 
-#[cfg(target_arch = "riscv64")]
-extern crate alloc;
-
+// `Vec` comes from the alloc crate that `ckb_std::default_alloc!` (emitted by the
+// `harness!` macro) brings in.
 #[cfg(target_arch = "riscv64")]
 use alloc::vec::Vec;
 

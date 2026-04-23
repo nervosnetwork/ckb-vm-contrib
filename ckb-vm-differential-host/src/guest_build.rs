@@ -89,7 +89,7 @@ pub fn build_guest_crate_with(manifest_dir: &str, config: &BuildConfig) -> Resul
     let bin_name = read_bin_name(&manifest_path)?;
     let target_dir = guest_target_dir(manifest_dir, &bin_name);
 
-    run_cargo_build(&manifest_path, &bin_name, &target_dir, config)?;
+    run_cargo_build(manifest_dir, &manifest_path, &bin_name, &target_dir, config)?;
 
     let elf_path = target_dir.join(&config.target_triple).join("release").join(&bin_name);
     std::fs::read(&elf_path)
@@ -97,6 +97,7 @@ pub fn build_guest_crate_with(manifest_dir: &str, config: &BuildConfig) -> Resul
 }
 
 fn run_cargo_build(
+    manifest_dir: &Path,
     manifest_path: &Path,
     bin_name: &str,
     target_dir: &Path,
@@ -118,6 +119,10 @@ fn run_cargo_build(
         cmd.arg(arg);
     }
 
+    // Cargo's `.cargo/config.toml` lookup walks up from the CWD, not the manifest
+    // dir. Pin CWD to the manifest dir so per-crate config (env vars, target
+    // overrides, etc.) is always picked up regardless of where the parent ran.
+    cmd.current_dir(manifest_dir);
     cmd.env("CARGO_TARGET_DIR", target_dir);
     for key in &config.env_remove {
         cmd.env_remove::<&OsStr>(key.as_ref());
