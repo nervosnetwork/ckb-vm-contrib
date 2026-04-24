@@ -1,4 +1,4 @@
-use ckb_vm_differential::host::oneshot_check;
+use ckb_vm_differential_test::oneshot_check;
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
 use sha256_differential::Sha256Harness;

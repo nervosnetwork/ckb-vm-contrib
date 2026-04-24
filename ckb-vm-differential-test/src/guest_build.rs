@@ -12,9 +12,6 @@ const ELF_OVERRIDE_ENV: &str = "CKB_VM_DIFFERENTIAL_GUEST_ELF";
 ///
 /// Defaults match the canonical ckb-vm guest build:
 /// `cargo build --release --target=riscv64imac-unknown-none-elf --features=__guest`.
-/// Override anything that doesn't fit your toolchain — change the target triple if
-/// you target a different RISC-V profile, set env vars to redirect `cc-rs` at a
-/// non-default cross compiler, or append `--config` flags as needed.
 #[derive(Debug, Clone)]
 pub struct BuildConfig {
     pub target_triple: String,
@@ -30,10 +27,12 @@ impl Default for BuildConfig {
             target_triple: DEFAULT_GUEST_TARGET_TRIPLE.into(),
             feature: DEFAULT_GUEST_FEATURE.into(),
             extra_args: Vec::new(),
-            // Strip a conservative default set of env vars the parent cargo exports;
-            // anything left can redirect the nested build at the wrong target.
-            // TODO: audit the full list — RUSTC_WRAPPER, RUSTFLAGS, CARGO_ENCODED_RUSTFLAGS, CARGO_BUILD_TARGET, CARGO_PRIMARY_PACKAGE, CARGO_MANIFEST_DIR, …
             env: Vec::new(),
+            // Strip a conservative default set of env vars the parent cargo
+            // exports; anything left can redirect the nested build at the wrong
+            // target. TODO: audit the full list — RUSTC_WRAPPER, RUSTFLAGS,
+            // CARGO_ENCODED_RUSTFLAGS, CARGO_BUILD_TARGET, CARGO_PRIMARY_PACKAGE,
+            // CARGO_MANIFEST_DIR, …
             env_remove: ["RUSTC_WRAPPER", "RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "CARGO_BUILD_TARGET"]
                 .into_iter()
                 .map(OsString::from)
@@ -71,9 +70,10 @@ impl BuildConfig {
 
 /// Compiles the crate at `manifest_dir` with default `BuildConfig`.
 ///
-/// Setting `CKB_VM_DIFFERENTIAL_GUEST_ELF` to an existing file path skips cargo entirely
-/// and loads that ELF instead — useful when debugging the host, since CodeLLDB on Windows
-/// crashes when the debugged process spawns cargo/rustc/linker underneath it.
+/// Setting `CKB_VM_DIFFERENTIAL_GUEST_ELF` to an existing file path skips cargo
+/// entirely and loads that ELF instead — useful when debugging the host, since
+/// CodeLLDB on Windows crashes when the debugged process spawns cargo/rustc/
+/// linker underneath it.
 pub fn build_guest_crate(manifest_dir: &str) -> Result<Vec<u8>, DivergenceError> {
     build_guest_crate_with(manifest_dir, &BuildConfig::default())
 }
@@ -81,7 +81,8 @@ pub fn build_guest_crate(manifest_dir: &str) -> Result<Vec<u8>, DivergenceError>
 /// Same as [`build_guest_crate`] but threads a user-supplied [`BuildConfig`].
 pub fn build_guest_crate_with(manifest_dir: &str, config: &BuildConfig) -> Result<Vec<u8>, DivergenceError> {
     if let Some(path) = std::env::var_os(ELF_OVERRIDE_ENV) {
-        return std::fs::read(&path).map_err(|e| DivergenceError::Build(format!("{ELF_OVERRIDE_ENV}={path:?}: {e}")));
+        return std::fs::read(&path)
+            .map_err(|e| DivergenceError::Build(format!("{ELF_OVERRIDE_ENV}={path:?}: {e}")));
     }
 
     let manifest_dir = Path::new(manifest_dir);
@@ -119,9 +120,9 @@ fn run_cargo_build(
         cmd.arg(arg);
     }
 
-    // Cargo's `.cargo/config.toml` lookup walks up from the CWD, not the manifest
-    // dir. Pin CWD to the manifest dir so per-crate config (env vars, target
-    // overrides, etc.) is always picked up regardless of where the parent ran.
+    // Cargo's `.cargo/config.toml` lookup walks up from CWD, not the manifest
+    // dir. Pin CWD so per-crate config (env vars, target overrides, etc.) is
+    // always picked up regardless of where the parent ran.
     cmd.current_dir(manifest_dir);
     cmd.env("CARGO_TARGET_DIR", target_dir);
     for key in &config.env_remove {
@@ -140,7 +141,8 @@ fn run_cargo_build(
 }
 
 /// Reads the `[[bin]]` name from a guest crate manifest.
-/// TODO: use the `cargo_metadata` crate for a robust parse. Current impl assumes a single `[[bin]]` section with `name = "..."` on a clean line.
+/// TODO: use the `cargo_metadata` crate for a robust parse. Current impl
+/// assumes a single `[[bin]]` section with `name = "..."` on a clean line.
 fn read_bin_name(manifest_path: &Path) -> Result<String, DivergenceError> {
     let text = std::fs::read_to_string(manifest_path)
         .map_err(|e| DivergenceError::Build(format!("reading {}: {e}", manifest_path.display())))?;

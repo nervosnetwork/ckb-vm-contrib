@@ -1,12 +1,11 @@
 #![cfg_attr(target_arch = "riscv64", no_std)]
 #![cfg_attr(target_arch = "riscv64", no_main)]
 
-// `Vec` comes from the alloc crate that `ckb_std::default_alloc!` (emitted by the
-// `harness!` macro) brings in.
+// `Vec` comes from the alloc crate that the `harness!` macro brings in.
 #[cfg(target_arch = "riscv64")]
 use alloc::vec::Vec;
 
-ckb_vm_differential::harness! {
+ckb_vm_differential_test::harness! {
     name:      Sha256Harness,
     input:     Vec<u8>,
     output:    [u8; 32],

@@ -3,16 +3,13 @@ resolver = "2"
 members = [
   "ckb-mock-tx-types",
   "ckb-script-size-analyzer",
-  "ckb-vm-differential",
-  "ckb-vm-differential-host",
-  "ckb-vm-differential-protocol",
+  "ckb-vm-differential-test",
   "ckb-vm-fuzzing-utils",
   "ckb-vm-syscall-tracer",
   "ckb-vm-test-suite",
-  "ckb-x64-simulator",
   "protobuf-ckb-syscalls",
 ]
-exclude = ["ckb-vm-differential-guest", "deps/ckb-vm"]
+exclude = ["deps/ckb-vm"]
 
 [workspace.package]
 version = "1.1.1"
@@ -28,15 +25,12 @@ ckb-script = "1.1.0"
 ckb-std = { version = "1.1.0", features = ["stub-syscalls"] }
 ckb-traits = "1.1.0"
 ckb-types = "1.1.0"
-ckb-vm = { version = "=0.24.14", features=["pprof"] }
+ckb-vm = { version = "=0.24.14", features = ["pprof"] }
 
 # Crates defined in current workspace
 ckb-mock-tx-types = { path = "ckb-mock-tx-types", version = "1.1.1" }
 ckb-script-size-analyzer = { path = "ckb-script-size-analyzer", version = "1.1.1" }
-ckb-vm-differential = { path = "ckb-vm-differential", version = "1.1.1" }
-ckb-vm-differential-guest = { path = "ckb-vm-differential-guest", version = "1.1.1" }
-ckb-vm-differential-host = { path = "ckb-vm-differential-host", version = "1.1.1" }
-ckb-vm-differential-protocol = { path = "ckb-vm-differential-protocol", version = "1.1.1" }
+ckb-vm-differential-test = { path = "ckb-vm-differential-test", version = "1.1.1" }
 ckb-vm-fuzzing-utils = { path = "ckb-vm-fuzzing-utils", version = "1.1.1" }
 ckb-vm-syscall-tracer = { path = "ckb-vm-syscall-tracer", version = "1.1.1" }
 ckb-x64-simulator = { path = "ckb-x64-simulator", version = "1.1.1" }

@@ -1,11 +1,7 @@
-#![no_std]
-
-extern crate alloc;
-
 use alloc::vec::Vec;
 use serde::{Serialize, de::DeserializeOwned};
 
-pub use ckb_vm_differential_protocol as protocol;
+use crate::protocol;
 
 pub fn read_input<I: DeserializeOwned>() -> I {
     let bytes = read_input_raw();
@@ -32,7 +28,8 @@ where
 }
 
 pub fn read_input_raw() -> Vec<u8> {
-    // First call with capacity 0 to probe the required size
+    // First call with capacity 0 probes the required size, so we allocate
+    // exactly what we need instead of speculating with MAX_PAYLOAD_LEN.
     let needed = unsafe { syscall_read_input(core::ptr::null_mut(), 0) };
     let mut buf: Vec<u8> = Vec::with_capacity(needed);
     let written = unsafe { syscall_read_input(buf.as_mut_ptr(), buf.capacity()) };
@@ -126,6 +123,8 @@ unsafe fn syscall_panic(_buf: *const u8, _len: usize) {
     unimplemented!("guest syscalls only compile on riscv64")
 }
 
+/// Fixed-capacity sink that lets us format panic info without an allocator.
+/// The panic handler can't afford to allocate — the panic itself may *be* OOM.
 pub struct PanicBuffer<'a> {
     pub buf: &'a mut [u8],
     pub cursor: usize,
@@ -153,8 +152,8 @@ impl core::fmt::Write for PanicBuffer<'_> {
 }
 
 /// Emits the boot code (`_start`), the C-ABI shim that calls the user's main,
-/// and a panic handler that forwards panic info via [`SYSCALL_PANIC`] before halting.
-/// Replaces `ckb_std::entry!` so we own panic reporting.
+/// and a panic handler that forwards panic info via `SYSCALL_PANIC` before
+/// halting. Replaces `ckb_std::entry!` so we own panic reporting.
 #[macro_export]
 macro_rules! guest_main {
     ($main:path) => {
@@ -184,9 +183,9 @@ macro_rules! guest_main {
         fn __ckb_vm_differential_panic(info: &core::panic::PanicInfo) -> ! {
             use core::fmt::Write as _;
             let mut storage = [0u8; 1024];
-            let mut sink = $crate::PanicBuffer::new(&mut storage);
+            let mut sink = $crate::guest::PanicBuffer::new(&mut storage);
             let _ = write!(sink, "{info}");
-            $crate::report_panic(sink.as_slice());
+            $crate::guest::report_panic(sink.as_slice());
             unreachable!("reported panic and halted");
         }
     };

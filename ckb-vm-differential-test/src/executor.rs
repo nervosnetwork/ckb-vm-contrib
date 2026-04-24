@@ -7,15 +7,14 @@ use ckb_vm::{
     cost_model::estimate_cycles,
     registers::{A0, A1, A7},
 };
-use ckb_vm_differential_protocol as protocol;
 
-use crate::{DivergenceError, Executor, Harness};
+use crate::{DivergenceError, Executor, Harness, protocol};
 
 type Payload = Vec<u8>;
 type OutputSlot = Arc<Mutex<Option<Payload>>>;
 type PanicSlot = Arc<Mutex<Option<String>>>;
 
-/// Boots a fresh ckb-vm for every input
+/// Boots a fresh ckb-vm for every input.
 pub struct OneShot<H: Harness> {
     _marker: PhantomData<H>,
 }
@@ -67,7 +66,7 @@ impl<H: Harness> OneShot<H> {
 
         let exit_code = machine.run()?;
 
-        // Panic takes priority over normal output
+        // Panic takes priority over normal output.
         if let Some(message) = panic_slot.lock().expect("panic slot poisoned").take() {
             return Err(DivergenceError::GuestPanicked { message });
         }
@@ -115,8 +114,8 @@ impl DifferentialSyscalls {
         let buf_addr = machine.registers()[A0].to_u64();
         let cap = machine.registers()[A1].to_u64() as usize;
         let len = self.input_bytes.len();
-        // Two-step protocol: when the guest's buffer is large enough, copy the bytes;
-        // otherwise (cap == 0 probe call) just report the required size.
+        // Two-step protocol: when the guest's buffer is large enough, copy the
+        // bytes; otherwise (cap == 0 probe call) just report the required size.
         if cap >= len {
             machine.memory_mut().store_bytes(buf_addr, &self.input_bytes)?;
         }
@@ -147,6 +146,8 @@ impl DifferentialSyscalls {
     pub fn handle_panic<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), VmError> {
         let buf_addr = machine.registers()[A0].to_u64();
         let len = machine.registers()[A1].to_u64() as usize;
+        // Cap reads at max_payload — a wild a1 value shouldn't make us copy
+        // gigabytes out of the VM's address space.
         let len = len.min(self.max_payload);
         let bytes = machine.memory_mut().load_bytes(buf_addr, len as u64)?;
         let message = String::from_utf8_lossy(&bytes).into_owned();
