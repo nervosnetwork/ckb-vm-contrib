@@ -4,9 +4,6 @@
 [submodule "deps/secp256k1"]
 	path = deps/secp256k1
 	url = https://github.com/bitcoin-core/secp256k1
-[submodule "deps/riscv-tests"]
-	path = deps/riscv-tests
-	url = https://github.com/nervosnetwork/riscv-tests
 [submodule "deps/riscv-arch-test"]
 	path = deps/riscv-arch-test
 	url = https://github.com/riscv-non-isa/riscv-arch-test.git
@@ -19,3 +16,6 @@
 [submodule "deps/musl"]
 	path = deps/musl
 	url = https://github.com/nervosnetwork/musl
+[submodule "deps/riscv-tests"]
+	path = deps/riscv-tests
+	url = https://github.com/nervosnetwork/riscv-tests
