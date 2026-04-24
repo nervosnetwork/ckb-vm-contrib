@@ -1,5 +1,2 @@
 /build
 /target
-
-*.proptest-regressions
-*.regressions

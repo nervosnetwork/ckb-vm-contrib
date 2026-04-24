@@ -13,8 +13,6 @@ members = [
   "tests",
 ]
 
-exclude = ["contracts/sha256_differential"]
-
 [profile.release]
 overflow-checks = true
 strip = false
