@@ -17,7 +17,8 @@ jobs:
         submodules: recursive
     - name: Setup Clang
       run: |
-        clang --version
+        sudo apt install clang-19
+        sudo apt install lld-19
     - name: Setup Clippy
       run: |
         rustup component add clippy
