@@ -28,8 +28,7 @@ where
 }
 
 pub fn read_input_raw() -> Vec<u8> {
-    // First call with capacity 0 probes the required size, so we allocate
-    // exactly what we need instead of speculating with MAX_PAYLOAD_LEN.
+    // Probe size with cap=0 to allocate exactly — ckb-std's heap can't afford a MAX_PAYLOAD_LEN speculation.
     let needed = unsafe { syscall_read_input(core::ptr::null_mut(), 0) };
     let mut buf: Vec<u8> = Vec::with_capacity(needed);
     let written = unsafe { syscall_read_input(buf.as_mut_ptr(), buf.capacity()) };
@@ -47,6 +46,7 @@ pub fn signal_ready() {
     unsafe { syscall_signal_ready() };
 }
 
+/// Allocation-free, callable from the panic handler even on OOM.
 pub fn report_panic(message: &[u8]) {
     unsafe { syscall_panic(message.as_ptr(), message.len()) };
 }
@@ -123,8 +123,7 @@ unsafe fn syscall_panic(_buf: *const u8, _len: usize) {
     unimplemented!("guest syscalls only compile on riscv64")
 }
 
-/// Fixed-capacity sink that lets us format panic info without an allocator.
-/// The panic handler can't afford to allocate — the panic itself may *be* OOM.
+/// Stack-backed sink for formatting panic messages without touching the allocator.
 pub struct PanicBuffer<'a> {
     pub buf: &'a mut [u8],
     pub cursor: usize,
@@ -151,9 +150,8 @@ impl core::fmt::Write for PanicBuffer<'_> {
     }
 }
 
-/// Emits the boot code (`_start`), the C-ABI shim that calls the user's main,
-/// and a panic handler that forwards panic info via `SYSCALL_PANIC` before
-/// halting. Replaces `ckb_std::entry!` so we own panic reporting.
+/// Emits `_start`, the C-ABI shim, and a `#[panic_handler]` that forwards
+/// panic info via `SYSCALL_PANIC`. Stand-in for `ckb_std::entry!`.
 #[macro_export]
 macro_rules! guest_main {
     ($main:path) => {
@@ -173,7 +171,6 @@ macro_rules! guest_main {
             "addi a1, sp, 8",
             "li a2, 0",
             "call __ckb_vm_differential_main",
-            // ckb-vm exit syscall.
             "li a7, 93",
             "ecall",
         );

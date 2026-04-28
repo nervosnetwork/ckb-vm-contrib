@@ -28,11 +28,8 @@ impl Default for BuildConfig {
             feature: DEFAULT_GUEST_FEATURE.into(),
             extra_args: Vec::new(),
             env: Vec::new(),
-            // Strip a conservative default set of env vars the parent cargo
-            // exports; anything left can redirect the nested build at the wrong
-            // target. TODO: audit the full list — RUSTC_WRAPPER, RUSTFLAGS,
-            // CARGO_ENCODED_RUSTFLAGS, CARGO_BUILD_TARGET, CARGO_PRIMARY_PACKAGE,
-            // CARGO_MANIFEST_DIR, …
+            // Conservative strip list — leakage from the parent cargo can retarget the
+            // nested build. TODO: also CARGO_PRIMARY_PACKAGE, CARGO_MANIFEST_DIR, etc.
             env_remove: ["RUSTC_WRAPPER", "RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "CARGO_BUILD_TARGET"]
                 .into_iter()
                 .map(OsString::from)
@@ -70,10 +67,8 @@ impl BuildConfig {
 
 /// Compiles the crate at `manifest_dir` with default `BuildConfig`.
 ///
-/// Setting `CKB_VM_DIFFERENTIAL_GUEST_ELF` to an existing file path skips cargo
-/// entirely and loads that ELF instead — useful when debugging the host, since
-/// CodeLLDB on Windows crashes when the debugged process spawns cargo/rustc/
-/// linker underneath it.
+/// `CKB_VM_DIFFERENTIAL_GUEST_ELF` short-circuits this and loads from disk —
+/// CodeLLDB on Windows crashes if the debugged process spawns cargo.
 pub fn build_guest_crate(manifest_dir: &str) -> Result<Vec<u8>, DivergenceError> {
     build_guest_crate_with(manifest_dir, &BuildConfig::default())
 }
@@ -120,9 +115,8 @@ fn run_cargo_build(
         cmd.arg(arg);
     }
 
-    // Cargo's `.cargo/config.toml` lookup walks up from CWD, not the manifest
-    // dir. Pin CWD so per-crate config (env vars, target overrides, etc.) is
-    // always picked up regardless of where the parent ran.
+    // Pin CWD so cargo's `.cargo/config.toml` walk-up starts from the manifest
+    // dir regardless of where the parent test ran.
     cmd.current_dir(manifest_dir);
     cmd.env("CARGO_TARGET_DIR", target_dir);
     for key in &config.env_remove {
@@ -140,9 +134,7 @@ fn run_cargo_build(
     Ok(())
 }
 
-/// Reads the `[[bin]]` name from a guest crate manifest.
-/// TODO: use the `cargo_metadata` crate for a robust parse. Current impl
-/// assumes a single `[[bin]]` section with `name = "..."` on a clean line.
+/// Reads the `[[bin]]` name from a guest manifest. TODO: swap in `cargo_metadata`.
 fn read_bin_name(manifest_path: &Path) -> Result<String, DivergenceError> {
     let text = std::fs::read_to_string(manifest_path)
         .map_err(|e| DivergenceError::Build(format!("reading {}: {e}", manifest_path.display())))?;

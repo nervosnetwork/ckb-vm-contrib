@@ -1,23 +1,13 @@
-/// Reads the next input payload into a guest buffer.
-///
-/// Calling convention: `a0` = buffer ptr, `a1` = capacity, `a7` = this code.
-/// Returns the number of bytes the host wrote (or would have written, when the
-/// buffer is too small) in `a0`.
+/// Read the next input payload into a guest buffer.
 pub const SYSCALL_READ_INPUT: u64 = 0xF000;
 
-/// Emits an output payload back to the host.
-///
-/// Calling convention: `a0` = buffer ptr, `a1` = length, `a7` = this code.
+/// Emit an output payload back to the host.
 pub const SYSCALL_WRITE_OUTPUT: u64 = 0xF001;
 
-/// Marks the guest as ready for its next input.
-///
-/// Stage A: host ignores. Stages B/C: host snapshots or resumes here.
+/// Marker for the host: `OneShot` ignores it, `WarmStart` snapshots here.
 pub const SYSCALL_SIGNAL_READY: u64 = 0xF002;
 
-/// Reports a guest-side panic to the host.
-///
-/// Calling convention: `a0` = utf-8 message ptr, `a1` = length, `a7` = this code.
+/// Forward guest panic info to the host before halting.
 pub const SYSCALL_PANIC: u64 = 0xF003;
 
 pub const DEFAULT_MAX_PAYLOAD_LEN: usize = 1 << 20;
