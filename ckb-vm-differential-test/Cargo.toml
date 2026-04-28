@@ -11,7 +11,7 @@ serde = { version = "1.0", default-features = false, features = ["derive", "allo
 postcard = { version = "1.0", default-features = false, features = ["alloc"] }
 
 [target.'cfg(not(target_arch = "riscv64"))'.dependencies]
-ckb-vm.workspace = true
+ckb-vm = { path = "../../ckb-vm", features = ["pprof"] }
 proptest = "1.5"
 thiserror = "1.0"
 

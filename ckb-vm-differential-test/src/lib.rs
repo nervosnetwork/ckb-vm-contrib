@@ -9,8 +9,7 @@ pub mod protocol;
 #[cfg(target_arch = "riscv64")]
 pub mod guest;
 
-// Re-export `ckb_std` so the `harness!` macro can call into it without forcing
-// the user crate to take a direct dependency on it.
+// Re-exported so `harness!` can invoke `default_alloc!` without the user crate depending on ckb-std directly.
 #[cfg(target_arch = "riscv64")]
 pub use ckb_std;
 
@@ -20,7 +19,7 @@ mod executor;
 mod guest_build;
 
 #[cfg(not(target_arch = "riscv64"))]
-pub use executor::{DifferentialSyscalls, OneShot};
+pub use executor::{DifferentialSyscalls, OneShot, WarmStart};
 #[cfg(not(target_arch = "riscv64"))]
 pub use guest_build::{BuildConfig, build_guest_crate, build_guest_crate_with};
 #[cfg(not(target_arch = "riscv64"))]
@@ -75,10 +74,31 @@ mod host_api {
         let mut executor = OneShot::<H>::new();
         executor.check(input).map_err(|e| proptest::test_runner::TestCaseError::fail(e.to_string()))
     }
+
+    /// proptest helper backed by [`crate::WarmStart`]. The per-harness executor
+    /// is held in a thread-local `TypeId`-keyed map so the snapshot survives
+    /// across cases (proptest re-enters the test fn per case).
+    pub fn warmstart_check<H: Harness>(input: &H::Input) -> Result<(), proptest::test_runner::TestCaseError> {
+        use crate::WarmStart;
+        use std::any::{Any, TypeId};
+        use std::cell::RefCell;
+        use std::collections::HashMap;
+
+        thread_local! {
+            static EXECUTORS: RefCell<HashMap<TypeId, Box<dyn Any>>> = RefCell::new(HashMap::new());
+        }
+
+        EXECUTORS.with(|cell| {
+            let mut map = cell.borrow_mut();
+            let entry = map.entry(TypeId::of::<H>()).or_insert_with(|| Box::new(WarmStart::<H>::new()));
+            let executor = entry.downcast_mut::<WarmStart<H>>().expect("WarmStart<H> downcast");
+            executor.check(input).map_err(|e| proptest::test_runner::TestCaseError::fail(e.to_string()))
+        })
+    }
 }
 
 #[cfg(not(target_arch = "riscv64"))]
-pub use host_api::{DivergenceError, Executor, Harness, oneshot_check};
+pub use host_api::{DivergenceError, Executor, Harness, oneshot_check, warmstart_check};
 
 /// Defines a harness for a single library port. Expands to:
 ///
@@ -118,18 +138,15 @@ macro_rules! harness {
         reference: $reference:expr,
         build:     $build:expr $(,)?
     ) => {
-        // ---------- guest-side expansion ----------
+        /* #region Guest-side expansion */
         #[cfg(target_arch = "riscv64")]
         extern crate alloc;
 
-        // 16KB fixed + 1.2MB dynamic — large enough for typical proptest
-        // payloads. Override by hand-rolling `default_alloc!` if a particular
-        // harness needs more.
+        // 16KB fixed + 1.2MB dynamic. Override by hand-rolling `default_alloc!` for harnesses needing more.
         #[cfg(target_arch = "riscv64")]
         $crate::ckb_std::default_alloc!(16384, 1258306, 64);
 
-        // Boot code + panic handler. Replaces `ckb_std::entry!` so guest
-        // panics surface as `DivergenceError::GuestPanicked` on the host.
+        // Replaces `ckb_std::entry!` so guest panics surface as `DivergenceError::GuestPanicked`.
         #[cfg(target_arch = "riscv64")]
         $crate::guest_main!(__ckb_vm_differential_guest_main);
 
@@ -137,8 +154,9 @@ macro_rules! harness {
         fn __ckb_vm_differential_guest_main() -> i8 {
             $crate::guest::run(|input: $input| -> $output { ($port)(&input) })
         }
+        /* #endregion */
 
-        // ---------- host-side expansion ----------
+        /* #region Host-side expansion */
         #[cfg(not(target_arch = "riscv64"))]
         pub struct $name;
 
@@ -151,8 +169,7 @@ macro_rules! harness {
                 static ELF: ::std::sync::OnceLock<::std::vec::Vec<u8>> = ::std::sync::OnceLock::new();
                 ELF.get_or_init(|| {
                     let config: $crate::BuildConfig = $build;
-                    $crate::build_guest_crate_with(env!("CARGO_MANIFEST_DIR"), &config)
-                        .expect("build guest crate")
+                    $crate::build_guest_crate_with(env!("CARGO_MANIFEST_DIR"), &config).expect("build guest crate")
                 })
                 .as_slice()
             }
@@ -161,6 +178,7 @@ macro_rules! harness {
                 ($reference)(input)
             }
         }
+        /* #endregion */
     };
 }
 

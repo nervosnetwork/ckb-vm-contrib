@@ -2,8 +2,8 @@ use core::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 
 use ckb_vm::{
-    Bytes, DefaultCoreMachine, DefaultMachineBuilder, Error as VmError, Memory, Register, SparseMemory, SupportMachine,
-    Syscalls,
+    Bytes, DefaultCoreMachine, DefaultMachineRunner, Error as VmError, Memory, Register, RustDefaultMachineBuilder,
+    SparseMemory, SupportMachine, Syscalls,
     cost_model::estimate_cycles,
     registers::{A0, A1, A7},
 };
@@ -56,7 +56,7 @@ impl<H: Harness> OneShot<H> {
             ckb_vm::machine::VERSION2,
             u64::MAX,
         );
-        let mut machine = DefaultMachineBuilder::new(core)
+        let mut machine = RustDefaultMachineBuilder::new(core)
             .instruction_cycle_func(Box::new(estimate_cycles))
             .syscall(Box::new(syscalls))
             .build();
@@ -66,7 +66,6 @@ impl<H: Harness> OneShot<H> {
 
         let exit_code = machine.run()?;
 
-        // Panic takes priority over normal output.
         if let Some(message) = panic_slot.lock().expect("panic slot poisoned").take() {
             return Err(DivergenceError::GuestPanicked { message });
         }
@@ -87,6 +86,111 @@ impl<H: Harness> Executor<H> for OneShot<H> {
     }
 }
 
+type CoreMachine = DefaultCoreMachine<u64, SparseMemory<u64>>;
+
+/// Boots once, snapshots the post-init core machine at first `SIGNAL_READY`,
+/// then per case clones the snapshot and resumes into `read_input`. See README.
+pub struct WarmStart<H: Harness> {
+    snapshot: Option<CoreMachine>,
+    _marker: PhantomData<H>,
+}
+
+impl<H: Harness> Default for WarmStart<H> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<H: Harness> WarmStart<H> {
+    pub fn new() -> Self {
+        Self { snapshot: None, _marker: PhantomData }
+    }
+
+    pub fn check(&mut self, input: &H::Input) -> Result<(), DivergenceError> {
+        let expected = H::reference(input);
+        let actual = self.run_guest(input)?;
+        if expected != actual {
+            return Err(DivergenceError::OutputMismatch {
+                input: format!("{input:?}"),
+                reference: format!("{expected:?}"),
+                guest: format!("{actual:?}"),
+            });
+        }
+        Ok(())
+    }
+
+    fn run_guest(&mut self, input: &H::Input) -> Result<H::Output, DivergenceError> {
+        let input_bytes = postcard::to_allocvec(input)?;
+        if input_bytes.len() > H::MAX_PAYLOAD_LEN {
+            return Err(DivergenceError::PayloadTooLarge { limit: H::MAX_PAYLOAD_LEN, actual: input_bytes.len() });
+        }
+
+        if self.snapshot.is_none() {
+            self.snapshot = Some(boot_and_capture::<H>()?);
+        }
+
+        let core_clone = self.snapshot.as_ref().expect("snapshot just set").clone();
+        let (syscalls, output_slot, panic_slot) =
+            DifferentialSyscalls::new(input_bytes, H::MAX_PAYLOAD_LEN);
+
+        let mut machine = RustDefaultMachineBuilder::new(core_clone)
+            .instruction_cycle_func(Box::new(estimate_cycles))
+            .syscall(Box::new(syscalls))
+            .build();
+
+        let exit_code = machine.run()?;
+
+        if let Some(message) = panic_slot.lock().expect("panic slot poisoned").take() {
+            return Err(DivergenceError::GuestPanicked { message });
+        }
+
+        let output_bytes =
+            output_slot.lock().expect("output slot poisoned").take().ok_or_else(|| DivergenceError::GuestExited {
+                reason: format!("guest exited (code={exit_code}) without calling SYSCALL_WRITE_OUTPUT"),
+            })?;
+
+        let output = postcard::from_bytes(&output_bytes)?;
+        Ok(output)
+    }
+}
+
+impl<H: Harness> Executor<H> for WarmStart<H> {
+    fn check(&mut self, input: &H::Input) -> Result<(), DivergenceError> {
+        WarmStart::check(self, input)
+    }
+}
+
+/// Runs to first `SIGNAL_READY` and returns a clone of the inner core. PC
+/// has already advanced past the ecall, so a fresh wrapper around the clone
+/// resumes at `read_input`.
+fn boot_and_capture<H: Harness>() -> Result<CoreMachine, DivergenceError> {
+    let (syscalls, _output_slot, panic_slot) =
+        DifferentialSyscalls::new_with_signal_stop(Vec::new(), H::MAX_PAYLOAD_LEN);
+
+    let core = DefaultCoreMachine::<u64, SparseMemory<u64>>::new(
+        ckb_vm::ISA_IMC | ckb_vm::ISA_B | ckb_vm::ISA_A | ckb_vm::ISA_MOP,
+        ckb_vm::machine::VERSION2,
+        u64::MAX,
+    );
+    let mut machine = RustDefaultMachineBuilder::new(core)
+        .instruction_cycle_func(Box::new(estimate_cycles))
+        .syscall(Box::new(syscalls))
+        .build();
+
+    let elf = Bytes::copy_from_slice(H::guest_elf());
+    machine.load_program(&elf, std::iter::empty::<Result<Bytes, VmError>>())?;
+    machine.run()?;
+
+    if let Some(message) = panic_slot.lock().expect("panic slot poisoned").take() {
+        return Err(DivergenceError::GuestPanicked { message });
+    }
+
+    // If the VM exited before SIGNAL_READY (no signal_ready in run loop, or
+    // guest crashed silently), the snapshot is bogus — but the next per-case
+    // run will surface that as `GuestExited` cleanly. Don't bother detecting here.
+    Ok(machine.inner_mut().clone())
+}
+
 #[doc(hidden)]
 pub struct DifferentialSyscalls {
     input_bytes: Payload,
@@ -94,10 +198,24 @@ pub struct DifferentialSyscalls {
     panic_slot: PanicSlot,
     max_payload: usize,
     ready_count: u32,
+    /// When true, `SYSCALL_SIGNAL_READY` halts the VM so `WarmStart` can capture state.
+    stop_on_signal_ready: bool,
 }
 
 impl DifferentialSyscalls {
     pub fn new(input_bytes: Payload, max_payload: usize) -> (Self, OutputSlot, PanicSlot) {
+        Self::with_options(input_bytes, max_payload, false)
+    }
+
+    pub fn new_with_signal_stop(input_bytes: Payload, max_payload: usize) -> (Self, OutputSlot, PanicSlot) {
+        Self::with_options(input_bytes, max_payload, true)
+    }
+
+    fn with_options(
+        input_bytes: Payload,
+        max_payload: usize,
+        stop_on_signal_ready: bool,
+    ) -> (Self, OutputSlot, PanicSlot) {
         let output_slot: OutputSlot = Arc::new(Mutex::new(None));
         let panic_slot: PanicSlot = Arc::new(Mutex::new(None));
         let this = Self {
@@ -106,6 +224,7 @@ impl DifferentialSyscalls {
             panic_slot: panic_slot.clone(),
             max_payload,
             ready_count: 0,
+            stop_on_signal_ready,
         };
         (this, output_slot, panic_slot)
     }
@@ -114,8 +233,7 @@ impl DifferentialSyscalls {
         let buf_addr = machine.registers()[A0].to_u64();
         let cap = machine.registers()[A1].to_u64() as usize;
         let len = self.input_bytes.len();
-        // Two-step protocol: when the guest's buffer is large enough, copy the
-        // bytes; otherwise (cap == 0 probe call) just report the required size.
+        // Two-step read: cap=0 just probes; cap>=len carries through to the actual copy.
         if cap >= len {
             machine.memory_mut().store_bytes(buf_addr, &self.input_bytes)?;
         }
@@ -138,16 +256,18 @@ impl DifferentialSyscalls {
         Ok(())
     }
 
-    pub fn handle_signal_ready<Mac: SupportMachine>(&mut self, _machine: &mut Mac) -> Result<(), VmError> {
+    pub fn handle_signal_ready<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), VmError> {
         self.ready_count = self.ready_count.saturating_add(1);
+        if self.stop_on_signal_ready {
+            machine.set_running(false);
+        }
         Ok(())
     }
 
     pub fn handle_panic<Mac: SupportMachine>(&mut self, machine: &mut Mac) -> Result<(), VmError> {
         let buf_addr = machine.registers()[A0].to_u64();
         let len = machine.registers()[A1].to_u64() as usize;
-        // Cap reads at max_payload — a wild a1 value shouldn't make us copy
-        // gigabytes out of the VM's address space.
+        // Defensive: a wild a1 from a runaway panic shouldn't cause a multi-GB read.
         let len = len.min(self.max_payload);
         let bytes = machine.memory_mut().load_bytes(buf_addr, len as u64)?;
         let message = String::from_utf8_lossy(&bytes).into_owned();
