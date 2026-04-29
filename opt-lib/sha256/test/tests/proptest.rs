@@ -1,4 +1,4 @@
-use ckb_vm_differential_test::oneshot_check;
+use ckb_vm_differential_test::warmstart_check;
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
 use sha256_differential::Sha256Harness;
@@ -11,6 +11,6 @@ proptest! {
 
     #[test]
     fn sha256_matches_reference(input in proptest::collection::vec(any::<u8>(), 0..1024)) {
-        oneshot_check::<Sha256Harness>(&input)?;
+        warmstart_check::<Sha256Harness>(&input)?;
     }
 }
