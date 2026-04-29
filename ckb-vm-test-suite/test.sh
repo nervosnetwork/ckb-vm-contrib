@@ -90,6 +90,15 @@ then
     for i in $(find . -regex ".*/rv64u[imac]-u-[a-z0-9_]*" | grep -v "fence_i" | grep -v "rv64ui-u-jalr"); do
         $ASM64 $i
     done
+    for i in $(find . -regex ".*/rv32uzb[a-z]-u-[a-z0-9_]*"); do
+        $INTERPRETER32 $i
+    done
+    for i in $(find . -regex ".*/rv64uzb[a-z]-u-[a-z0-9_]*"); do
+        $INTERPRETER64 $i
+    done
+    for i in $(find . -regex ".*/rv64uzb[a-z]-u-[a-z0-9_]*"); do
+        $ASM64 $i
+    done
 fi
 
 # Test CKB VM with ckb-vm-arch-test
