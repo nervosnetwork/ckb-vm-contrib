@@ -9,7 +9,8 @@ pub mod protocol;
 #[cfg(target_arch = "riscv64")]
 pub mod guest;
 
-// Re-exported so `harness!` can invoke `default_alloc!` without the user crate depending on ckb-std directly.
+// Re-exported so `harness!`/`entry!` can invoke `default_alloc!` etc. without the user crate
+// taking a direct dependency on ckb-std.
 #[cfg(target_arch = "riscv64")]
 pub use ckb_std;
 
@@ -36,6 +37,10 @@ mod host_api {
         type Output: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static;
 
         const MAX_PAYLOAD_LEN: usize = protocol::DEFAULT_MAX_PAYLOAD_LEN;
+        /// Identifies this harness inside a multi-harness guest binary. The
+        /// host passes it as `argv[0]`; the `entry!`-generated dispatcher
+        /// matches on it to pick which harness to run.
+        const NAME: &'static str;
 
         fn guest_elf() -> &'static [u8];
         fn reference(input: &Self::Input) -> Self::Output;
@@ -100,14 +105,18 @@ mod host_api {
 #[cfg(not(target_arch = "riscv64"))]
 pub use host_api::{DivergenceError, Executor, Harness, oneshot_check, warmstart_check};
 
-/// Defines a harness for a single library port. Expands to:
+/// Defines one harness. Expands to:
 ///
-/// * On riscv64 — the guest entry point + panic handler that runs the `port`
-///   function in a serve-input/return-output loop.
-/// * On any other target — a unit struct named `$name` implementing
-///   [`Harness`], with `guest_elf()` lazily built (or supplied via the
-///   `CKB_VM_DIFFERENTIAL_GUEST_ELF` env var) and `reference()` invoking the
+/// * On riscv64 — a unit struct `$name` carrying an inherent `__guest_run`
+///   method that drives the `port` closure in a serve-input/return-output
+///   loop.
+/// * On any other target — a unit struct `$name` implementing [`Harness`],
+///   with `guest_elf()` lazily built and `reference()` invoking the
 ///   host-side closure.
+///
+/// `harness!` does **not** emit boot code; that lives in [`entry!`]. A user
+/// crate must invoke `entry!` exactly once with the list of all harnesses
+/// it defines, otherwise the guest binary will fail to link.
 ///
 /// The optional `build:` arm threads a custom [`BuildConfig`] through to the
 /// cargo subprocess that produces the guest ELF.
@@ -138,32 +147,26 @@ macro_rules! harness {
         reference: $reference:expr,
         build:     $build:expr $(,)?
     ) => {
-        /* #region Guest-side expansion */
-        #[cfg(target_arch = "riscv64")]
-        extern crate alloc;
-
-        // 16KB fixed + 1.2MB dynamic. Override by hand-rolling `default_alloc!` for harnesses needing more.
-        #[cfg(target_arch = "riscv64")]
-        $crate::ckb_std::default_alloc!(16384, 1258306, 64);
-
-        // Replaces `ckb_std::entry!` so guest panics surface as `DivergenceError::GuestPanicked`.
-        #[cfg(target_arch = "riscv64")]
-        $crate::guest_main!(__ckb_vm_differential_guest_main);
-
-        #[cfg(target_arch = "riscv64")]
-        fn __ckb_vm_differential_guest_main() -> i8 {
-            $crate::guest::run(|input: $input| -> $output { ($port)(&input) })
-        }
-        /* #endregion */
-
-        /* #region Host-side expansion */
-        #[cfg(not(target_arch = "riscv64"))]
         pub struct $name;
+
+        impl $name {
+            /// Identifier matched against `argv[0]` by the `entry!` dispatcher.
+            pub const NAME: &'static str = stringify!($name);
+        }
+
+        #[cfg(target_arch = "riscv64")]
+        impl $name {
+            #[doc(hidden)]
+            pub fn __guest_run() -> i8 {
+                $crate::guest::run(|input: $input| -> $output { ($port)(&input) })
+            }
+        }
 
         #[cfg(not(target_arch = "riscv64"))]
         impl $crate::Harness for $name {
             type Input = $input;
             type Output = $output;
+            const NAME: &'static str = <$name>::NAME;
 
             fn guest_elf() -> &'static [u8] {
                 static ELF: ::std::sync::OnceLock<::std::vec::Vec<u8>> = ::std::sync::OnceLock::new();
@@ -178,7 +181,71 @@ macro_rules! harness {
                 ($reference)(input)
             }
         }
-        /* #endregion */
+    };
+}
+
+/// Emits the guest binary's boot code and the dispatcher that picks which harness to run based on `argv[0]`.
+/// Required exactly once per user crate when one or more `harness!`es are defined.
+///
+/// ```ignore
+/// ckb_vm_differential_test::harness! { name: H1, ... }
+/// ckb_vm_differential_test::harness! { name: H2, ... }
+/// ckb_vm_differential_test::entry!(H1, H2);
+/// ```
+///
+/// Expands to nothing on non-riscv64 targets.
+#[macro_export]
+macro_rules! entry {
+    ($($harness:ident),+ $(,)?) => {
+        #[cfg(target_arch = "riscv64")]
+        extern crate alloc;
+
+        // 16KB fixed + 1.2MB dynamic. Hand-roll your own `default_alloc!`
+        // before invoking `entry!` if a particular harness needs more.
+        #[cfg(target_arch = "riscv64")]
+        $crate::ckb_std::default_alloc!(16384, 1258306, 64);
+
+        #[cfg(target_arch = "riscv64")]
+        #[unsafe(no_mangle)]
+        unsafe extern "C" fn __ckb_vm_differential_main(
+            argc: core::ffi::c_int,
+            argv: *const $crate::ckb_std::env::Arg,
+        ) -> i8 {
+            let argv = unsafe { core::slice::from_raw_parts(argv, argc as usize) };
+            unsafe { $crate::ckb_std::env::set_argv(argv) };
+            let argv = $crate::ckb_std::env::argv();
+            assert!(!argv.is_empty(), "differential test: no harness name in argv");
+            let name = argv[0].to_bytes();
+            $(
+                if name == <$harness>::NAME.as_bytes() {
+                    return $harness::__guest_run();
+                }
+            )+
+            panic!("differential test: unknown harness in argv[0]")
+        }
+
+        #[cfg(target_arch = "riscv64")]
+        core::arch::global_asm!(
+            ".global _start",
+            "_start:",
+            "lw a0, 0(sp)",
+            "addi a1, sp, 8",
+            "li a2, 0",
+            "call __ckb_vm_differential_main",
+            "li a7, 93",
+            "ecall",
+        );
+
+        #[cfg(target_arch = "riscv64")]
+        #[panic_handler]
+        fn __ckb_vm_differential_panic(info: &core::panic::PanicInfo) -> ! {
+            use core::fmt::Write as _;
+            let mut storage = [0u8; 1024];
+            let mut sink = $crate::guest::PanicBuffer::new(&mut storage);
+            let _ = write!(sink, "{info}");
+            $crate::guest::report_panic(sink.as_slice());
+            unreachable!("reported panic and halted");
+        }
     };
 }
 

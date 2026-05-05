@@ -62,7 +62,8 @@ impl<H: Harness> OneShot<H> {
             .build();
 
         let elf = Bytes::copy_from_slice(H::guest_elf());
-        machine.load_program(&elf, std::iter::empty::<Result<Bytes, VmError>>())?;
+        let argv = std::iter::once(Ok::<Bytes, VmError>(Bytes::copy_from_slice(H::NAME.as_bytes())));
+        machine.load_program(&elf, argv)?;
 
         let exit_code = machine.run()?;
 
@@ -178,7 +179,8 @@ fn boot_and_capture<H: Harness>() -> Result<CoreMachine, DivergenceError> {
         .build();
 
     let elf = Bytes::copy_from_slice(H::guest_elf());
-    machine.load_program(&elf, std::iter::empty::<Result<Bytes, VmError>>())?;
+    let argv = std::iter::once(Ok::<Bytes, VmError>(Bytes::copy_from_slice(H::NAME.as_bytes())));
+    machine.load_program(&elf, argv)?;
     machine.run()?;
 
     if let Some(message) = panic_slot.lock().expect("panic slot poisoned").take() {
