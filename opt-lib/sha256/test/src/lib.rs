@@ -1,7 +1,7 @@
 #![cfg_attr(target_arch = "riscv64", no_std)]
 #![cfg_attr(target_arch = "riscv64", no_main)]
 
-// `Vec` comes from the alloc crate that the `harness!` macro brings in.
+// `Vec` comes from the alloc crate that `entry!` brings in.
 #[cfg(target_arch = "riscv64")]
 use alloc::vec::Vec;
 
@@ -15,3 +15,5 @@ ckb_vm_differential_test::harness! {
         sha2::Sha256::digest(m.as_slice()).into()
     },
 }
+
+ckb_vm_differential_test::entry!(Sha256Harness);

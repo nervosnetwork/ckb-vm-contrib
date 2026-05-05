@@ -14,3 +14,5 @@ ckb_vm_differential_test::harness! {
         sha2::Sha512::digest(m.as_slice()).to_vec()
     },
 }
+
+ckb_vm_differential_test::entry!(Sha512Harness);
