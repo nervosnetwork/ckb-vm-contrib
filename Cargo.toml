@@ -7,8 +7,10 @@ members = [
   "ckb-vm-fuzzing-utils",
   "ckb-vm-syscall-tracer",
   "ckb-vm-test-suite",
+  "ckb-x64-simulator",
   "protobuf-ckb-syscalls",
 ]
+exclude = ["deps/ckb-vm"]
 
 [workspace.package]
 version = "1.1.1"

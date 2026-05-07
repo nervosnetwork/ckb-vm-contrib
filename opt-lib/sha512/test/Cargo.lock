@@ -121,6 +121,7 @@ dependencies = [
 [[package]]
 name = "ckb-vm"
 version = "0.24.0"
+source = "git+https://github.com/nervosnetwork/ckb-vm?branch=develop#6ccbcfafe497404521c7c76dc2c48ce18d7725bd"
 dependencies = [
  "bytes",
  "cc",
@@ -136,6 +137,7 @@ dependencies = [
 [[package]]
 name = "ckb-vm-definitions"
 version = "0.24.0"
+source = "git+https://github.com/nervosnetwork/ckb-vm?branch=develop#6ccbcfafe497404521c7c76dc2c48ce18d7725bd"
 dependencies = [
  "pastey",
 ]
