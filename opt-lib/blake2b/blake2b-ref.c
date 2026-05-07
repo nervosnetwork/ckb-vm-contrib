@@ -78,14 +78,14 @@ static void blake2b_init0( blake2b_state *S )
 /* init xors IV with input parameter block */
 int blake2b_init_param( blake2b_state *S, const blake2b_param *P )
 {
-  const uint8_t *p = ( const uint8_t * )( P );
+  const uint64_t *p = ( const uint64_t * )( P );
   size_t i;
 
   blake2b_init0( S );
 
   /* IV XOR ParamBlock */
   for( i = 0; i < 8; ++i )
-    S->h[i] ^= load64( p + sizeof( S->h[i] ) * i );
+    S->h[i] ^= p[i];
 
   S->outlen = P->digest_length;
   return 0;
