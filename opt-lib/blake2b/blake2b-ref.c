@@ -178,8 +178,9 @@ static void blake2b_compress( blake2b_state *S, const uint8_t block[BLAKE2B_BLOC
   uint64_t v[16];
   size_t i;
 
+  const uint64_t *block64 = (const uint64_t *)block;
   for( i = 0; i < 16; ++i ) {
-    m[i] = load64( block + i * sizeof( m[i] ) );
+    m[i] = block64[i];
   }
 
   for( i = 0; i < 8; ++i ) {

@@ -19,3 +19,4 @@ clang-finder = "0.1"
 
 [dev-dependencies]
 blake2 = { version = "0.10", default-features = false }
+blake2ya = "*"
