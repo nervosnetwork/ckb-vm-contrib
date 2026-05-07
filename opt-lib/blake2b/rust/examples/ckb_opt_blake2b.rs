@@ -27,11 +27,14 @@ fn abort() -> ! {
 #[unsafe(no_mangle)]
 fn _start() -> ! {
     let buf = [0u8; 1024];
-    let mut hasher = ckb_opt_blake2b::Blake2b::new();
+    let mut p = ckb_opt_blake2b::blake2b_params();
+    p.digest(32);
+    let mut h = ckb_opt_blake2b::blake2b(p);
     for _ in 0..1024 {
-        hasher.update(&buf);
+        h.update(&buf);
     }
-    let hash = hasher.finalize();
+    let mut hash = [0u8; 32];
+    h.digest(&mut hash);
     let want: [u8; 32] = [
         0xc7, 0x48, 0x60, 0xdd, 0x74, 0x80, 0xe7, 0xf4, 0xb5, 0xae, 0x70, 0x5f, 0x91, 0x37, 0xe9, 0x0a, 0x0a, 0xa0,
         0xbc, 0x67, 0xd6, 0xe9, 0x0c, 0xf8, 0x07, 0x8d, 0xd6, 0x69, 0x7d, 0xbd, 0xb6, 0xad,

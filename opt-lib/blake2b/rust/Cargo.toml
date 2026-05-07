@@ -1,6 +1,6 @@
 [package]
 name = "ckb-opt-blake2b"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 description = "BLAKE2b implementation for CKB-VM with Rust bindings"
@@ -19,4 +19,4 @@ clang-finder = "0.1"
 
 [dev-dependencies]
 blake2 = { version = "0.10", default-features = false }
-blake2ya = "*"
+blake2ya = "1.0"
