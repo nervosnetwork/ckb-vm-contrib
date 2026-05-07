@@ -260,8 +260,9 @@ int blake2b_final( blake2b_state *S, void *out, size_t outlen )
   __builtin_memset( S->buf + S->buflen, 0, BLAKE2B_BLOCKBYTES - S->buflen ); /* Padding */
   blake2b_compress( S, S->buf );
 
+  uint64_t *out64 = (uint64_t *)buffer;
   for( i = 0; i < 8; ++i ) /* Output full hash to temp buffer */
-    store64( buffer + sizeof( S->h[i] ) * i, S->h[i] );
+    out64[i] = S->h[i];
 
   __builtin_memcpy( out, buffer, S->outlen );
   secure_zero_memory(buffer, sizeof(buffer));
