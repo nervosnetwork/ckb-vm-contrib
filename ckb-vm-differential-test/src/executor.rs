@@ -61,7 +61,7 @@ impl<H: Harness> OneShot<H> {
             .syscall(Box::new(syscalls))
             .build();
 
-        let elf = Bytes::copy_from_slice(H::guest_elf());
+        let elf = Bytes::copy_from_slice(H::guest_elf()?);
         let argv = std::iter::once(Ok::<Bytes, VmError>(Bytes::copy_from_slice(H::NAME.as_bytes())));
         machine.load_program(&elf, argv)?;
 
@@ -178,7 +178,7 @@ fn boot_and_capture<H: Harness>() -> Result<CoreMachine, DivergenceError> {
         .syscall(Box::new(syscalls))
         .build();
 
-    let elf = Bytes::copy_from_slice(H::guest_elf());
+    let elf = Bytes::copy_from_slice(H::guest_elf()?);
     let argv = std::iter::once(Ok::<Bytes, VmError>(Bytes::copy_from_slice(H::NAME.as_bytes())));
     machine.load_program(&elf, argv)?;
     machine.run()?;

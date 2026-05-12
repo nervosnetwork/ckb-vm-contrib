@@ -42,7 +42,7 @@ mod host_api {
         /// matches on it to pick which harness to run.
         const NAME: &'static str;
 
-        fn guest_elf() -> &'static [u8];
+        fn guest_elf() -> Result<&'static [u8], DivergenceError>;
         fn reference(input: &Self::Input) -> Self::Output;
     }
 
@@ -168,13 +168,17 @@ macro_rules! harness {
             type Output = $output;
             const NAME: &'static str = <$name>::NAME;
 
-            fn guest_elf() -> &'static [u8] {
-                static ELF: ::std::sync::OnceLock<::std::vec::Vec<u8>> = ::std::sync::OnceLock::new();
+            fn guest_elf() -> ::std::result::Result<&'static [u8], $crate::DivergenceError> {
+                static ELF: ::std::sync::OnceLock<::std::result::Result<::std::vec::Vec<u8>, ::std::string::String>> =
+                    ::std::sync::OnceLock::new();
                 ELF.get_or_init(|| {
                     let config: $crate::BuildConfig = $build;
-                    $crate::build_guest_crate_with(env!("CARGO_MANIFEST_DIR"), &config).expect("build guest crate")
+                    $crate::build_guest_crate_with(env!("CARGO_MANIFEST_DIR"), &config)
+                        .map_err(|e| e.to_string())
                 })
-                .as_slice()
+                .as_ref()
+                .map(|v| v.as_slice())
+                .map_err(|e| $crate::DivergenceError::Build(e.clone()))
             }
 
             fn reference(input: &Self::Input) -> Self::Output {
