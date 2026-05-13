@@ -17,8 +17,9 @@ on:
       - "Cargo.lock"
 
 env:
-  CC_riscv64imac_unknown_none_elf: riscv64-unknown-elf-gcc
-  AR_riscv64imac_unknown_none_elf: riscv64-unknown-elf-ar
+  CC_riscv64imac_unknown_none_elf: clang
+  CFLAGS_riscv64imac_unknown_none_elf: --target=riscv64-unknown-none-elf
+  AR_riscv64imac_unknown_none_elf: llvm-ar
   PROPTEST_CASES: 64
 
 jobs:
@@ -31,7 +32,7 @@ jobs:
     - name: Setup RISC-V Toolchain
       run: |
         rustup target add riscv64imac-unknown-none-elf
-        sudo apt-get install -y gcc-riscv64-unknown-elf
+        sudo apt-get install -y llvm
     - name: Build
       run: |
         cd ckb-vm-differential-test
