@@ -22,7 +22,7 @@ mod guest_build;
 #[cfg(not(target_arch = "riscv64"))]
 pub use executor::{DifferentialSyscalls, OneShot, WarmStart};
 #[cfg(not(target_arch = "riscv64"))]
-pub use guest_build::{BuildConfig, build_guest_crate, build_guest_crate_with};
+pub use guest_build::{BuildConfig, CustomBuild, GuestBuild, __build_guest, build_guest_crate, build_guest_crate_cmd, build_guest_crate_with};
 #[cfg(not(target_arch = "riscv64"))]
 pub use proptest;
 
@@ -172,8 +172,7 @@ macro_rules! harness {
                 static ELF: ::std::sync::OnceLock<::std::result::Result<::std::vec::Vec<u8>, ::std::string::String>> =
                     ::std::sync::OnceLock::new();
                 ELF.get_or_init(|| {
-                    let config: $crate::BuildConfig = $build;
-                    $crate::build_guest_crate_with(env!("CARGO_MANIFEST_DIR"), &config)
+                    $crate::__build_guest(env!("CARGO_MANIFEST_DIR"), $build)
                         .map_err(|e| e.to_string())
                 })
                 .as_ref()

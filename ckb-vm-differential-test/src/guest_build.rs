@@ -65,6 +65,79 @@ impl BuildConfig {
     }
 }
 
+/// A fully custom build command for cases where the guest ELF is not produced
+/// by a plain `cargo build` invocation.
+///
+/// The command runs with its working directory set to the crate's manifest
+/// directory. After it exits successfully, the framework reads the ELF from
+/// `elf_path` (resolved relative to the same manifest directory).
+///
+/// # Example
+///
+/// ```ignore
+/// build: CustomBuild::new("make", "target/riscv64imac-unknown-none-elf/release/my_contract")
+///     .arg("build-guest")
+///     .env("RUSTFLAGS", "-C opt-level=z")
+/// ```
+#[derive(Debug, Clone)]
+pub struct CustomBuild {
+    pub program: OsString,
+    pub args: Vec<OsString>,
+    /// Path to the produced ELF, relative to the crate manifest directory.
+    pub elf_path: PathBuf,
+    pub env: Vec<(OsString, OsString)>,
+    pub env_remove: Vec<OsString>,
+}
+
+impl CustomBuild {
+    pub fn new(program: impl Into<OsString>, elf_path: impl Into<PathBuf>) -> Self {
+        Self {
+            program: program.into(),
+            args: Vec::new(),
+            elf_path: elf_path.into(),
+            env: Vec::new(),
+            env_remove: Vec::new(),
+        }
+    }
+
+    pub fn arg(mut self, arg: impl Into<OsString>) -> Self {
+        self.args.push(arg.into());
+        self
+    }
+
+    pub fn env(mut self, key: impl Into<OsString>, value: impl Into<OsString>) -> Self {
+        self.env.push((key.into(), value.into()));
+        self
+    }
+
+    pub fn env_remove(mut self, key: impl Into<OsString>) -> Self {
+        self.env_remove.push(key.into());
+        self
+    }
+}
+
+/// Selects between the built-in cargo strategy and a fully custom command.
+///
+/// Both [`BuildConfig`] and [`CustomBuild`] implement `Into<GuestBuild>`, so
+/// the `build:` arm of [`harness!`] accepts either type transparently.
+#[derive(Debug, Clone)]
+pub enum GuestBuild {
+    Cargo(BuildConfig),
+    Custom(CustomBuild),
+}
+
+impl From<BuildConfig> for GuestBuild {
+    fn from(c: BuildConfig) -> Self {
+        Self::Cargo(c)
+    }
+}
+
+impl From<CustomBuild> for GuestBuild {
+    fn from(c: CustomBuild) -> Self {
+        Self::Custom(c)
+    }
+}
+
 /// Compiles the crate at `manifest_dir` with default `BuildConfig`.
 ///
 /// `CKB_VM_DIFFERENTIAL_GUEST_ELF` short-circuits this and loads from disk —
@@ -75,12 +148,34 @@ pub fn build_guest_crate(manifest_dir: &str) -> Result<Vec<u8>, DivergenceError>
 
 /// Same as [`build_guest_crate`] but threads a user-supplied [`BuildConfig`].
 pub fn build_guest_crate_with(manifest_dir: &str, config: &BuildConfig) -> Result<Vec<u8>, DivergenceError> {
+    __build_guest(manifest_dir, config.clone())
+}
+
+/// Runs a [`CustomBuild`] command to produce the guest ELF.
+///
+/// `CKB_VM_DIFFERENTIAL_GUEST_ELF` short-circuits the build the same way it
+/// does for [`build_guest_crate_with`].
+pub fn build_guest_crate_cmd(manifest_dir: &str, custom: &CustomBuild) -> Result<Vec<u8>, DivergenceError> {
+    __build_guest(manifest_dir, custom.clone())
+}
+
+/// Dispatch entry-point used by the `harness!` macro. Accepts anything that
+/// converts into a [`GuestBuild`] — both [`BuildConfig`] and [`CustomBuild`]
+/// qualify — so `harness!`'s `build:` arm works with either type.
+#[doc(hidden)]
+pub fn __build_guest(manifest_dir: &str, build: impl Into<GuestBuild>) -> Result<Vec<u8>, DivergenceError> {
     if let Some(path) = std::env::var_os(ELF_OVERRIDE_ENV) {
-        return std::fs::read(&path)
-            .map_err(|e| DivergenceError::Build(format!("{ELF_OVERRIDE_ENV}={path:?}: {e}")));
+        return std::fs::read(&path).map_err(|e| DivergenceError::Build(format!("{ELF_OVERRIDE_ENV}={path:?}: {e}")));
     }
 
     let manifest_dir = Path::new(manifest_dir);
+    match build.into() {
+        GuestBuild::Cargo(config) => run_cargo_strategy(manifest_dir, &config),
+        GuestBuild::Custom(custom) => run_custom_strategy(manifest_dir, &custom),
+    }
+}
+
+fn run_cargo_strategy(manifest_dir: &Path, config: &BuildConfig) -> Result<Vec<u8>, DivergenceError> {
     let manifest_path = manifest_dir.join("Cargo.toml");
     let bin_name = read_bin_name(&manifest_path)?;
     let target_dir = guest_target_dir(manifest_dir, &bin_name);
@@ -88,6 +183,30 @@ pub fn build_guest_crate_with(manifest_dir: &str, config: &BuildConfig) -> Resul
     run_cargo_build(manifest_dir, &manifest_path, &bin_name, &target_dir, config)?;
 
     let elf_path = target_dir.join(&config.target_triple).join("release").join(&bin_name);
+    std::fs::read(&elf_path)
+        .map_err(|e| DivergenceError::Build(format!("reading guest ELF at {}: {e}", elf_path.display())))
+}
+
+fn run_custom_strategy(manifest_dir: &Path, custom: &CustomBuild) -> Result<Vec<u8>, DivergenceError> {
+    let mut cmd = Command::new(&custom.program);
+    for arg in &custom.args {
+        cmd.arg(arg);
+    }
+    cmd.current_dir(manifest_dir);
+    for key in &custom.env_remove {
+        cmd.env_remove::<&OsStr>(key.as_ref());
+    }
+    for (key, value) in &custom.env {
+        cmd.env::<&OsStr, &OsStr>(key.as_ref(), value.as_ref());
+    }
+
+    let output = cmd.output().map_err(|e| DivergenceError::Build(format!("spawning {:?}: {e}", custom.program)))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(DivergenceError::Build(format!("{:?} failed:\n{stderr}", custom.program)));
+    }
+
+    let elf_path = manifest_dir.join(&custom.elf_path);
     std::fs::read(&elf_path)
         .map_err(|e| DivergenceError::Build(format!("reading guest ELF at {}: {e}", elf_path.display())))
 }
