@@ -77,10 +77,10 @@ mod ffi {
         pub personal: [c_uchar; 16],
     }
 
-    extern "C" {
-        pub fn blake2b_init_param(S: *mut Blake2bState, P: *const Blake2bParam) -> c_int;
-        pub fn blake2b_update(S: *mut Blake2bState, pin: *const c_uchar, inlen: usize) -> c_int;
-        pub fn blake2b_final(S: *mut Blake2bState, out: *mut c_uchar, outlen: usize) -> c_int;
+    unsafe extern "C" {
+        pub unsafe fn blake2b_init_param(S: *mut Blake2bState, P: *const Blake2bParam) -> c_int;
+        pub unsafe fn blake2b_update(S: *mut Blake2bState, pin: *const c_uchar, inlen: usize) -> c_int;
+        pub unsafe fn blake2b_final(S: *mut Blake2bState, out: *mut c_uchar, outlen: usize) -> c_int;
     }
 }
 
@@ -89,14 +89,14 @@ mod ffi {
 /// The byte layout of the internal buffer mirrors `blake2b_param` in blake2.h exactly,
 /// so the buffer can be cast directly to a `*const Blake2bParam` pointer for FFI.
 #[derive(Clone)]
-pub struct Blake2bParams {
+pub struct Param2b {
     /// Packed parameter block (64 bytes), layout identical to C `blake2b_param`.
     buf: [u8; 64],
     /// Key bytes (up to 64), zeroed beyond key_length.
     key: [u8; 64],
 }
 
-impl Blake2bParams {
+impl Param2b {
     /// Set digest byte length. Must be in [1, 64] for BLAKE2b.
     pub fn digest(&mut self, n: u8) {
         assert!(1 <= n && n <= 64);
@@ -139,7 +139,7 @@ impl Blake2b {
 
     /// Return the digest value into the provided buffer.
     ///
-    /// The length of `d` must equal the digest length set in [`Blake2bParams::digest`].
+    /// The length of `d` must equal the digest length set in [`Param2b::digest`].
     pub fn digest(&mut self, d: &mut [u8]) {
         unsafe {
             ffi::blake2b_final(&mut self.ctx, d.as_mut_ptr(), self.outlen);
@@ -149,17 +149,17 @@ impl Blake2b {
 
 /// Create the parameter block of BLAKE2b. All general parameters are supported.
 ///
-/// The caller must call [`Blake2bParams::digest`] to set the output length before
+/// The caller must call [`Param2b::digest`] to set the output length before
 /// passing the params to [`blake2b`].
-pub fn blake2b_params() -> Blake2bParams {
-    let mut r = Blake2bParams { buf: [0u8; 64], key: [0u8; 64] };
+pub fn blake2b_params() -> Param2b {
+    let mut r = Param2b { buf: [0u8; 64], key: [0u8; 64] };
     r.buf[0x02] = 0x01; // fanout  = 1
     r.buf[0x03] = 0x01; // depth   = 1
     r
 }
 
 /// Core hasher state of BLAKE2b.
-pub fn blake2b(params: Blake2bParams) -> Blake2b {
+pub fn blake2b(params: Param2b) -> Blake2b {
     let mut ctx = ffi::Blake2bState {
         h: [0u64; 8],
         t: [0u64; 2],
