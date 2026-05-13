@@ -117,7 +117,7 @@ impl Param2b {
     }
 
     /// Set personalization. An arbitrary string of up to 16 bytes.
-    pub fn person(&mut self, n: &[u8]) {
+    pub fn personal(&mut self, n: &[u8]) {
         assert!(n.len() <= 16);
         self.buf[0x30..0x30 + n.len()].copy_from_slice(n);
     }
