@@ -9,91 +9,25 @@ A test crate's `src/lib.rs` declares N `harness!`es and exactly one `entry!`. Th
 - **host lib** — each harness implements [`Harness`].
 - **guest bin** — `entry!` emits `_start` and dispatches on `argv[0]`.
 
-Minimal example — [opt-lib/sha256/test](../opt-lib/sha256/test):
-
-```rust
-// src/lib.rs
-#![cfg_attr(target_arch = "riscv64", no_std)]
-#![cfg_attr(target_arch = "riscv64", no_main)]
-
-#[cfg(target_arch = "riscv64")]
-use alloc::vec::Vec;
-
-ckb_vm_differential_test::harness! {
-    name:      Sha256Harness,
-    input:     Vec<u8>,
-    output:    [u8; 32],
-    port:      |m: &Vec<u8>| ckb_opt_sha256::sha256(m),
-    reference: |m: &Vec<u8>| {
-        use sha2::Digest;
-        sha2::Sha256::digest(m.as_slice()).into()
-    },
-}
-
-ckb_vm_differential_test::entry!(Sha256Harness);
-```
-
-```toml
-# Cargo.toml
-[package]
-name = "sha256_differential"
-version = "0.1.0"
-edition = "2024"
-
-[workspace]
-[features]
-__guest = []
-
-[lib]
-path = "src/lib.rs"
-
-[[bin]]
-name = "sha256_differential"
-path = "src/lib.rs"
-required-features = ["__guest"]
-
-[dependencies]
-ckb-vm-differential-test = { path = "../../../ckb-vm-differential-test" }
-
-[target.'cfg(not(target_arch = "riscv64"))'.dependencies]
-sha2 = "0.10"
-proptest = "1.5"
-
-[target.'cfg(target_arch = "riscv64")'.dependencies]
-ckb-opt-sha256 = { path = "../rust" }
-```
-
-```rust
-// tests/proptest.rs
-use ckb_vm_differential_test::warmstart_check;
-use proptest::prelude::*;
-use sha256_differential::Sha256Harness;
-
-proptest! {
-    #[test]
-    fn sha256_matches_reference(input in proptest::collection::vec(any::<u8>(), 0..1024)) {
-        warmstart_check::<Sha256Harness>(&input)?;
-    }
-}
-```
+Minimal example: [opt-lib/sha256/test](../opt-lib/sha256/test).
 
 ```bash
 cargo test                              # cross-compiles the guest ELF lazily on first call
 PROPTEST_CASES=256 cargo test
 ```
 
-The first invocation shells out to cargo to cross-compile the guest. Cached at `target/<bin>-guest/`. Failing seeds persist under `tests/regressions/`.
+Failing seeds persist under `tests/regressions/`.
 
 ## `harness!`
 
 ```text
 harness! {
-    name:      Ident,                    // host struct name; also the dispatch tag
-    input:     Ty,                       // serde + Debug + Clone + 'static
-    output:    Ty,                       // serde + Debug + PartialEq + 'static
-    port:      |&Input| -> Output,       // guest
-    reference: |&Input| -> Output,       // host
-    build:     BuildConfig (optional),   // overrides cargo invocation
+    name:      Ident,                             // host struct name; also the dispatch tag
+    input:     Ty,                                // serde + Debug + Clone + 'static
+    output:    Ty,                                // serde + Debug + PartialEq + 'static
+    port:      |&Input| -> Output,                // guest
+    reference: |&Input| -> Output,                // host
+    build:     BuildConfig | CustomBuild,         // optional; defaults to BuildConfig::default()
 }
 ```
 
@@ -102,20 +36,42 @@ Constraints:
 - `Output: serde::Deserialize` rules out `[T; N]` for `N > 32`. Use `Vec<u8>` or `serde-big-array`.
 - The `reference` body is host-only but token-parsed everywhere; don't import guest-only items inside it.
 
-## Multiple harnesses
+## Guest auto build
 
-Libraries with several primitives share one crate. Each `harness!` gets its own input/output types and host `Harness` impl; `entry!` collects them into one guest binary that dispatches on `argv[0]`. See [opt-lib/fips202/test](../opt-lib/fips202/test):
+The optional `build:` arm controls how the guest ELF is produced. It accepts any value that implements `Into<GuestBuild>` — either `BuildConfig` or `CustomBuild`.
+
+**`BuildConfig`** (default) drives a `cargo build` subprocess:
 
 ```rust
-ckb_vm_differential_test::harness! { name: Sha3_256Harness, input: Vec<u8>,        output: Vec<u8>, … }
-ckb_vm_differential_test::harness! { name: Sha3_512Harness, input: Vec<u8>,        output: Vec<u8>, … }
-ckb_vm_differential_test::harness! { name: Shake128Harness, input: (Vec<u8>, u16), output: Vec<u8>, … }
-ckb_vm_differential_test::harness! { name: Shake256Harness, input: (Vec<u8>, u16), output: Vec<u8>, … }
-
-ckb_vm_differential_test::entry!(Sha3_256Harness, Sha3_512Harness, Shake128Harness, Shake256Harness);
+build: BuildConfig::default()
+    .target_triple("riscv64imac-unknown-none-elf")  // default
+    .feature("__guest")                              // default
+    .arg("--locked")
+    .env("CARGO_PROFILE_RELEASE_LTO", "true")
 ```
 
-The shared guest ELF is built once per test process via `OnceLock`. `cargo test` parallelizes the four `proptest!` fns; per-thread executor caches keep each thread's warm-start snapshot independent.
+The ELF is read from `target/<bin>-guest/<triple>/release/<bin>` after a successful build. Leaking parent-cargo env vars (`RUSTFLAGS`, `CARGO_BUILD_TARGET`, …) is suppressed by default.
+
+**`CustomBuild`** runs an arbitrary command — use this when the guest is produced by a Makefile, a shell script, or any wrapper that is not a plain `cargo build`:
+
+```rust
+build: CustomBuild::new(
+           "make",
+           "build/riscv64imac-unknown-none-elf/release/my_contract",
+       )
+       .arg("guest")
+       .env("RUSTFLAGS", "-C opt-level=z")
+```
+
+`CustomBuild::new(program, elf_path)` takes the command to run and the path of the produced ELF relative to the crate manifest directory. The command runs with its working directory set to the manifest directory. Supports the same `.arg` / `.env` / `.env_remove` builder methods as `BuildConfig`.
+
+In both cases `CKB_VM_DIFFERENTIAL_GUEST_ELF` short-circuits the build and reads the ELF directly from disk. Build failures are returned as `DivergenceError::Build` (not a panic).
+
+## Multiple harnesses
+
+Libraries with several primitives share one crate. Each `harness!` gets its own input/output types and host `Harness` impl; `entry!` collects them into one guest binary that dispatches on `argv[0]`. See [opt-lib/fips202/test](../opt-lib/fips202/test).
+
+The shared guest ELF is built once per test process via `OnceLock`. `cargo test` parallelizes proptest fns; per-thread executor caches keep each thread's warm-start snapshot independent.
 
 ## Executors
 
@@ -183,15 +139,15 @@ Payloads are `postcard`-encoded; both sides fix serde features to `derive + allo
 
 ## `DivergenceError`
 
-| Variant           | Trigger                                           | Carries                                   |
-| ----------------- | ------------------------------------------------- | ----------------------------------------- |
-| `OutputMismatch`  | reference ≠ guest                                 | Debug-formatted input / reference / guest |
-| `GuestExited`     | VM terminated without `WRITE_OUTPUT` and no panic | exit code                                 |
-| `GuestPanicked`   | guest issued `SYSCALL_PANIC`                      | formatted `PanicInfo`                     |
-| `Vm`              | ckb-vm error                                      | `ckb_vm::Error`                           |
-| `Decode`          | guest output couldn't deserialize                 | `postcard::Error`                         |
-| `PayloadTooLarge` | input/output exceeds `MAX_PAYLOAD_LEN`            | sizes                                     |
-| `Build`           | cargo subprocess failed                           | stderr                                    |
+| Variant           | Trigger                                               | Carries                                   |
+| ----------------- | ----------------------------------------------------- | ----------------------------------------- |
+| `OutputMismatch`  | reference ≠ guest                                     | Debug-formatted input / reference / guest |
+| `GuestExited`     | VM terminated without `WRITE_OUTPUT` and no panic     | exit code                                 |
+| `GuestPanicked`   | guest issued `SYSCALL_PANIC`                          | formatted `PanicInfo`                     |
+| `Vm`              | ckb-vm error                                          | `ckb_vm::Error`                           |
+| `Decode`          | guest output couldn't deserialize                     | `postcard::Error`                         |
+| `PayloadTooLarge` | input/output exceeds `MAX_PAYLOAD_LEN`                | sizes                                     |
+| `Build`           | build command failed (`BuildConfig` or `CustomBuild`) | stderr                                    |
 
 Forwarded to proptest as `TestCaseError::fail(e.to_string())`.
 
