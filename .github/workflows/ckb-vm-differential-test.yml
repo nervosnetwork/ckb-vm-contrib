@@ -1,0 +1,51 @@
+name: ckb-vm-differential-test
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "ckb-vm-differential-test/**"
+      - "opt-lib/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  push:
+    branches: [ main ]
+    paths:
+      - "ckb-vm-differential-test/**"
+      - "opt-lib/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+
+env:
+  CC_riscv64imac_unknown_none_elf: clang
+  CFLAGS_riscv64imac_unknown_none_elf: --target=riscv64-unknown-none-elf
+  AR_riscv64imac_unknown_none_elf: llvm-ar
+  PROPTEST_CASES: 64
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Setup RISC-V Toolchain
+      run: |
+        rustup target add riscv64imac-unknown-none-elf
+        sudo apt-get install -y llvm
+    - name: Build
+      run: |
+        cd ckb-vm-differential-test
+        cargo build
+    - name: Test sha256
+      run: |
+        cd opt-lib/sha256/test
+        cargo test
+    - name: Test sha512
+      run: |
+        cd opt-lib/sha512/test
+        cargo test
+    - name: Test fips202
+      run: |
+        cd opt-lib/fips202/test
+        cargo test

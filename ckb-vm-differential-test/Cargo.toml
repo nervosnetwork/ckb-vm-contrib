@@ -1,0 +1,19 @@
+[package]
+name = "ckb-vm-differential-test"
+description = "End-to-end differential testing framework for cryptography ports to ckb-vm"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+postcard = { version = "1.0", default-features = false, features = ["alloc"] }
+
+[target.'cfg(not(target_arch = "riscv64"))'.dependencies]
+ckb-vm = { path = "../deps/ckb-vm", features = ["pprof"] }
+proptest = "1.5"
+thiserror = "1.0"
+
+[target.'cfg(target_arch = "riscv64")'.dependencies]
+ckb-std = "0.17"
