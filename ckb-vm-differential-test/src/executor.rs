@@ -52,7 +52,7 @@ impl<H: Harness> OneShot<H> {
         let (syscalls, output_slot, panic_slot) = DifferentialSyscalls::new(input_bytes, H::MAX_PAYLOAD_LEN);
 
         let core = DefaultCoreMachine::<u64, SparseMemory<u64>>::new(
-            ckb_vm::ISA_IMC | ckb_vm::ISA_B | ckb_vm::ISA_A | ckb_vm::ISA_MOP,
+            ckb_vm::ISA_IMC | ckb_vm::ISA_B | ckb_vm::ISA_MOP,
             ckb_vm::machine::VERSION2,
             u64::MAX,
         );
@@ -131,8 +131,7 @@ impl<H: Harness> WarmStart<H> {
         }
 
         let core_clone = self.snapshot.as_ref().expect("snapshot just set").clone();
-        let (syscalls, output_slot, panic_slot) =
-            DifferentialSyscalls::new(input_bytes, H::MAX_PAYLOAD_LEN);
+        let (syscalls, output_slot, panic_slot) = DifferentialSyscalls::new(input_bytes, H::MAX_PAYLOAD_LEN);
 
         let mut machine = RustDefaultMachineBuilder::new(core_clone)
             .instruction_cycle_func(Box::new(estimate_cycles))
@@ -169,7 +168,7 @@ fn boot_and_capture<H: Harness>() -> Result<CoreMachine, DivergenceError> {
         DifferentialSyscalls::new_with_signal_stop(Vec::new(), H::MAX_PAYLOAD_LEN);
 
     let core = DefaultCoreMachine::<u64, SparseMemory<u64>>::new(
-        ckb_vm::ISA_IMC | ckb_vm::ISA_B | ckb_vm::ISA_A | ckb_vm::ISA_MOP,
+        ckb_vm::ISA_IMC | ckb_vm::ISA_B | ckb_vm::ISA_MOP,
         ckb_vm::machine::VERSION2,
         u64::MAX,
     );

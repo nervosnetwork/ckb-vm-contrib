@@ -22,7 +22,7 @@ virtual machine used by the Nervos CKB blockchain.
 ## Build Commands
 
 ### Prerequisites
-- Rust 1.92.0 (pinned in `rust-toolchain.toml`)
+- Rust 1.95.0 (pinned in `rust-toolchain.toml`)
 - RISC-V target: `rustup target add riscv64imac-unknown-none-elf`
 - Clang (for C programs)
 - RISC-V GCC toolchain (for test programs)

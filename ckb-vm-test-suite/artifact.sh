@@ -15,10 +15,10 @@ cp ckb-vm-arch-test/work/rv64i_m/M/*.elf artifact/arch
 
 cp programs/build/release/*_ckbvm artifact/cryptography
 
-for i in $(find riscv-tests/isa -regex ".*/rv32u[imac]-u-[a-z0-9_]*" | grep -v "fence_i"); do
+for i in $(find riscv-tests/isa -regex ".*/rv32u[imc]-u-[a-z0-9_]*" | grep -v "fence_i"); do
     cp $i artifact/spec
 done
-for i in $(find riscv-tests/isa -regex ".*/rv64u[imac]-u-[a-z0-9_]*" | grep -v "fence_i" | grep -v "rv64ui-u-jalr"); do
+for i in $(find riscv-tests/isa -regex ".*/rv64u[imc]-u-[a-z0-9_]*" | grep -v "fence_i" | grep -v "rv64ui-u-jalr"); do
     cp $i artifact/spec
 done
 for i in $(find riscv-tests/isa -regex ".*/rv32uzb[a-z]-u-[a-z0-9_]*"); do

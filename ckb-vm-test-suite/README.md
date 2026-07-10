@@ -13,7 +13,6 @@ $ clang-19 --version
 Now you can run the test suite with the following steps:
 
 ```bash
-$ make ckb-vm
 $ ./test.sh
 ```
 
