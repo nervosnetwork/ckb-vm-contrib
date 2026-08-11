@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   benchmark:
+    if: github.repository == 'nervosnetwork/ckb-vm-contrib'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
