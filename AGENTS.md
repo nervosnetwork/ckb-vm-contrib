@@ -1,156 +1,137 @@
-# AGENTS.md - AI Agent Instructions for ckb-vm-contrib
-
-This file provides guidance for AI coding agents working in this repository.
+# AGENTS.md
 
 ## Project Overview
 
-CKB-VM-Contrib is a Rust workspace containing community-contributed tools, extensions,
-and testing frameworks for [CKB-VM](https://github.com/nervosnetwork/ckb-vm), a RISC-V
-virtual machine used by the Nervos CKB blockchain.
+`ckb-vm-contrib` is a Rust workspace focused on community tools, testing frameworks, analysis scripts, and experimental extensions for CKB-VM. It does not implement the core CKB-VM runtime itself; instead, it provides supporting components for VM development, validation, debugging, and performance analysis.
 
-### Workspace Members
-- `ckb-mock-tx-types` - Mock CKB transaction types for testing
-- `ckb-script-size-analyzer` - Smart contract binary size analyzer
-- `ckb-vm-fuzzing-utils` - Fuzzing utilities for VM testing
-- `ckb-vm-syscall-tracer` - Syscall tracing and analysis
-- `ckb-vm-test-suite` - Comprehensive VM test suite and benchmarks
-- `ckb-x64-simulator` - x64 simulator for CKB smart contracts
-- `protobuf-ckb-syscalls` - Protocol buffer definitions for syscalls
+The current workspace mainly includes:
 
----
+- `ckb-mock-tx-types`: mock CKB transaction environments and script execution contexts
+- `ckb-script-size-analyzer`: analyze and optimize smart contract binary size
+- `ckb-vm-differential-test`: differential testing across different VM implementations or execution paths
+- `ckb-vm-fuzzing-utils`: fuzzing utilities and shared abstractions
+- `ckb-vm-syscall-tracer`: trace and analyze syscall behavior in CKB scripts
+- `ckb-vm-test-suite`: VM test, compatibility, and benchmark entry points
+- `ckb-x64-simulator`: simulate CKB smart contract execution in an x64 environment
+- `protobuf-ckb-syscalls`: protobuf definitions and generated code for syscalls
+- `spike-sys`: Rust FFI bindings for the RISC-V ISA simulator
 
-## Build Commands
+This repository depends on Rust 1.95.0, the RISC-V toolchain, and submodule dependencies under `deps/`; many builds and tests require these environments to be prepared in advance.
 
-### Prerequisites
-- Rust 1.95.0 (pinned in `rust-toolchain.toml`)
-- RISC-V target: `rustup target add riscv64imac-unknown-none-elf`
-- Clang (for C programs)
-- RISC-V GCC toolchain (for test programs)
+## Development and Build Commands
 
-### Build Workspace
-```bash
-cargo build                          # Build all workspace members
-cargo build -p ckb-mock-tx-types     # Build specific package
-cargo build --release                # Release build
-```
-
-### Build Test Programs (required before running tests)
-```bash
-cd ckb-vm-test-suite/programs && make build
-```
-
----
-
-## Testing Commands
-
-### Run All Tests
-```bash
-cargo test                           # Run all workspace tests
-cargo test -p ckb-vm-test-suite      # Test specific package
-```
-### Run Single Test
-```bash
-cargo test test_name                 # Run test by name
-cargo test test_ed25519              # Example: run ed25519 test
-cargo test -p ckb-vm-test-suite test_ed25519  # Single test in package
-```
-### Full Test Suite (includes RISC-V compliance tests)
-```bash
-cd ckb-vm-test-suite && bash test.sh
-```
-### Benchmarks
-```bash
-cd ckb-vm-test-suite && cargo bench  # Run all benchmarks
-cargo bench --bench algorithm        # Run specific benchmark
-```
-
----
-
-## Linting and Formatting
+**ckb-mock-tx-types**
 
 ```bash
-cargo fmt                            # Format all code
-cargo fmt -- --check                 # Check formatting without changes
-cargo clippy                         # Run clippy lints
-cargo clippy -p ckb-x64-simulator    # Lint specific package
-cargo clippy -- -D warnings          # Treat warnings as errors
-```
-### Formatting Configuration (`rustfmt.toml`)
-- `max_width = 120` - Maximum line width
-- `use_small_heuristics = "Max"` - Use maximum width for all constructs
-
----
-
-## Code Style Guidelines
-
-### Imports
-Order imports in groups: 1) std, 2) external crates, 3) crate-local (`crate::`, `super::`)
-
-### Naming Conventions
-- Types/Traits: `PascalCase` (e.g., `MockTransaction`, `ResourceLoader`)
-- Functions/Methods: `snake_case` (e.g., `get_live_cell`, `build_verifier`)
-- Constants: `SCREAMING_SNAKE_CASE` (e.g., `CKB_SUCCESS`, `SOURCE_INPUT`)
-- Modules: `snake_case` (e.g., `readonly_machines`, `simulator_context`)
-- Type parameters: Single uppercase letters (e.g., `M`, `DL`, `F`)
-
-### Error Handling
-- Use `Result<T, Error>` for fallible operations
-- Map errors with descriptive context using `map_err`
-- Use `?` operator for error propagation
-- Use `ok_or` / `ok_or_else` to convert Options to Results
-
-```rust
-let resource = Resource::from_mock_tx(mock_tx).map_err(Error::External)?;
-let resolved = resolve_transaction(tx, &mut set, &resource, &resource)
-    .map_err(|e| Error::External(format!("resolving error: {}", e)))?;
+# Build
+$ cargo build
 ```
 
-### Pattern Matching
-Use exhaustive match statements; avoid catch-all `_` when possible:
-```rust
-match source {
-    SOURCE_INPUT => { /* ... */ }
-    SOURCE_OUTPUT => { /* ... */ }
-    SOURCE_CELL_DEP => { /* ... */ }
-    _ => panic!("Invalid source: {}", source),
-}
-```
+**ckb-script-size-analyzer**
 
-### Documentation
-- Add doc comments (`///`) for public items
-- Use module-level docs (`//!`) for module overview
-
----
-
-## FFI and Unsafe Code
-
-This codebase interfaces with C code and uses FFI:
-```rust
-#[unsafe(no_mangle)]
-pub extern "C" fn ckb_exit(code: i8) -> i32 {
-    std::process::exit(code.into());
-}
-```
-- Minimize unsafe code scope
-- Document safety invariants
-- Use helper functions to encapsulate unsafe operations
-
----
-
-## Project-Specific Notes
-
-### CKB-VM Modes
-- `interpreter32` / `interpreter64` - Interpreted execution
-- `asm64` - JIT-compiled execution (faster)
-- `mop` - Macro-op fusion optimization
-
-### RISC-V ISA Extensions
-- `ISA_IMC` - Base integer + multiply + compressed
-- `ISA_B` - Bit manipulation extension
-- `ISA_MOP` - Macro-op fusion
-
-### Git Submodules
-Dependencies in `deps/` are git submodules. Initialize with:
 ```bash
-git submodule update --init --recursive
+# Build
+$ cargo build
+
+# Usage: sort by name (default)
+$ cargo run -- --input <path-to-binary-with-debug-info>
+# Symbol: _Exit, size: 50
+# Symbol: ___errno_location, size: 8
+# Symbol: __addtf3, size: 1050
+
+# Usage: sort by size
+$ cargo run -- --input <path-to-binary-with-debug-info> --sort size
+# Symbol: sha2::sha512::compress512::hf28740838ff5f6b3, size: 13102
+# Symbol: __ckb_std_main, size: 4398
+# Symbol: curve25519_dalek::field::<impl curve25519_dalek::backend::serial::u64::field::FieldElement51>::sqrt_ratio_i::hcdb99974122f8072, size: 2990
+# ...
+```
+
+**ckb-vm-differential-test**
+
+```bash
+# Build
+$ cargo build
+```
+
+**ckb-vm-fuzzing-utils**
+
+```bash
+# Build
+$ cargo build
+```
+
+**ckb-vm-syscall-tracer**
+
+```bash
+# Build
+$ cargo build
+
+# Example tracing workflow
+$ cargo run --bin ckb-vm-syscall-tracer -- --tx-file mock_tx.json --script-hash <hash> --output /tmp/out
+$ cargo run --bin ckb-vm-syscall-reader -- /tmp/out/vm_0_0.traces
+```
+
+**ckb-vm-test-suite**
+
+```bash
+# Build
+$ cargo build
+
+# Build test programs. Required before many VM tests
+$ cd programs && make build
+
+# Full suite
+$ bash test.sh
+
+# Benchmarks
+$ cargo bench
+$ make report-bench.txt
+```
+
+**ckb-x64-simulator**
+
+```bash
+$ cargo build
+```
+
+**opt-lib/fips202**
+
+```bash
+# Build
+$ make
+# Run test and show cycles
+$ make run
+```
+
+**opt-lib/sha256**
+
+```bash
+# Build
+$ make
+# Run test and show cycles
+$ make run
+```
+
+**opt-lib/sha512**
+
+```bash
+# Build
+$ make
+# Run test and show cycles
+$ make run
+```
+
+**protobuf-ckb-syscalls**
+
+```bash
+# Build
+$ cargo build
+```
+
+**spike-sys**
+
+```bash
+# Build
+$ cargo build
 ```
