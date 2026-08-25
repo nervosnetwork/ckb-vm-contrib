@@ -4,7 +4,7 @@
 
 `ckb-vm-contrib` is a Rust workspace focused on community tools, testing frameworks, analysis scripts, and experimental extensions for CKB-VM. It does not implement the core CKB-VM runtime itself; instead, it provides supporting components for VM development, validation, debugging, and performance analysis.
 
-The current workspace mainly includes:
+The repository mainly includes:
 
 - `ckb-mock-tx-types`: mock CKB transaction environments and script execution contexts
 - `ckb-script-size-analyzer`: analyze and optimize smart contract binary size
