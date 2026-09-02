@@ -1,0 +1,174 @@
+{
+  "date": "2026-09-02",
+  "commit": "ca9275cff8cf38341f7964984bf5110f77f997a3",
+  "results": {
+    "asm": {
+      "ed25519": {
+        "cycles": 5019382.8,
+        "bytes": 73736,
+        "cpb": 68.0723
+      },
+      "k256_ecdsa": {
+        "cycles": 15954477.91,
+        "bytes": 107784,
+        "cpb": 148.0227
+      },
+      "k256_schnorr": {
+        "cycles": 8207658.48,
+        "bytes": 79576,
+        "cpb": 103.1424
+      },
+      "p256": {
+        "cycles": 15040132.81,
+        "bytes": 70680,
+        "cpb": 212.7919
+      },
+      "rsa": {
+        "cycles": 14920818.26,
+        "bytes": 127576,
+        "cpb": 116.9563
+      },
+      "secp256k1_ecdsa": {
+        "cycles": 6282780.82,
+        "bytes": 147016,
+        "cpb": 42.7354
+      },
+      "secp256k1_schnorr": {
+        "cycles": 6354760.51,
+        "bytes": 146392,
+        "cpb": 43.4092
+      },
+      "sphincsplus_ref": {
+        "cycles": 99486949.19,
+        "bytes": 25880,
+        "cpb": 3844.1634
+      }
+    },
+    "interpret": {
+      "ed25519": {
+        "cycles": 15780659.61,
+        "bytes": 73736,
+        "cpb": 214.0157
+      },
+      "k256_ecdsa": {
+        "cycles": 61310145.95,
+        "bytes": 107784,
+        "cpb": 568.8242
+      },
+      "k256_schnorr": {
+        "cycles": 30706232.65,
+        "bytes": 79576,
+        "cpb": 385.873
+      },
+      "p256": {
+        "cycles": 64848644.59,
+        "bytes": 70680,
+        "cpb": 917.4964
+      },
+      "rsa": {
+        "cycles": 50989466.93,
+        "bytes": 127576,
+        "cpb": 399.6791
+      },
+      "secp256k1_ecdsa": {
+        "cycles": 10282896.52,
+        "bytes": 147016,
+        "cpb": 69.9441
+      },
+      "secp256k1_schnorr": {
+        "cycles": 9903213.16,
+        "bytes": 146392,
+        "cpb": 67.6486
+      },
+      "sphincsplus_ref": {
+        "cycles": 494308359.74,
+        "bytes": 25880,
+        "cpb": 19100.0139
+      }
+    },
+    "mop": {
+      "ed25519": {
+        "cycles": 4642075.01,
+        "bytes": 73736,
+        "cpb": 62.9553
+      },
+      "k256_ecdsa": {
+        "cycles": 14207925.63,
+        "bytes": 107784,
+        "cpb": 131.8185
+      },
+      "k256_schnorr": {
+        "cycles": 7204729.07,
+        "bytes": 79576,
+        "cpb": 90.539
+      },
+      "p256": {
+        "cycles": 13555599.88,
+        "bytes": 70680,
+        "cpb": 191.7883
+      },
+      "rsa": {
+        "cycles": 14778283.03,
+        "bytes": 127576,
+        "cpb": 115.8391
+      },
+      "secp256k1_ecdsa": {
+        "cycles": 6020220.75,
+        "bytes": 147016,
+        "cpb": 40.9494
+      },
+      "secp256k1_schnorr": {
+        "cycles": 6082837.5,
+        "bytes": 146392,
+        "cpb": 41.5517
+      },
+      "sphincsplus_ref": {
+        "cycles": 97246371.82,
+        "bytes": 25880,
+        "cpb": 3757.5878
+      }
+    },
+    "native": {
+      "ed25519": {
+        "cycles": 1592066.83,
+        "bytes": 6240872,
+        "cpb": 0.2551
+      },
+      "k256_ecdsa": {
+        "cycles": 1938359.71,
+        "bytes": 7410672,
+        "cpb": 0.2616
+      },
+      "k256_schnorr": {
+        "cycles": 1693167.14,
+        "bytes": 7523704,
+        "cpb": 0.225
+      },
+      "p256": {
+        "cycles": 1977303.82,
+        "bytes": 5820136,
+        "cpb": 0.3397
+      },
+      "rsa": {
+        "cycles": 1871223.15,
+        "bytes": 10781344,
+        "cpb": 0.1736
+      },
+      "secp256k1_ecdsa": {
+        "cycles": 1240272.16,
+        "bytes": 170880,
+        "cpb": 7.2581
+      },
+      "secp256k1_schnorr": {
+        "cycles": 1222758.25,
+        "bytes": 170832,
+        "cpb": 7.1577
+      },
+      "sphincsplus_ref": {
+        "cycles": 5343993.36,
+        "bytes": 39128,
+        "cpb": 136.5772
+      }
+    }
+  }
+}
