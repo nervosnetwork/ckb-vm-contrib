@@ -16,7 +16,10 @@ While CKB-VM targets the RISC-V instruction set, general-purpose optimizations u
 
 The following algorithms are currently implemented:
 
-- [sha256](./sha256)
-- [sha512](./sha512)
+- [blake2b](./blake2b)
 - [shake128](./fips202)
 - [shake256](./fips202)
+- [sha3_256](./fips202)
+- [sha3_512](./fips202)
+- [sha256](./sha256)
+- [sha512](./sha512)
